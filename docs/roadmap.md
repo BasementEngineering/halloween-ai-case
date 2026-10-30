@@ -41,8 +41,12 @@ Goal: the Red Queen case, ready to publish by **2026-11-15**. The concept is in 
 
 ## Phase 3: ESP32 and Bluetooth
 
-- [ ] Buy a plain ESP32 or ESP32-C3 board (the old ESP8266 has no Bluetooth).
-- [ ] Firmware: BLE service with text commands (`LID:1`, `VIAL:0`, `LED:…`, `DRAWER:OPEN`).
+- [x] Board: ESP32-WROOM-32 DevKit (on COM14 during development).
+- [x] **BLE test firmware** (`firmware/esp32-ble-test/`): Nordic UART Service, heartbeat `HB:<n>:<uptime>` every 2 s, BOOT button as fake vial (`VIAL:0/1`), `PING`/`PONG`, advertising restarts after a disconnect. Flash with arduino-cli (bundled with the Arduino IDE), core `esp32:esp32` 2.0.14.
+- [x] **App side:** `CaseLink` with auto-reconnect (1, 2, 4, 8, 10 s) and a pulsing dot (green = heartbeats arriving, red = none for 5 s). The vial events drive the case flow.
+- [x] **Tested on the laptop (2026-10-30):** connect via the dot, heartbeat pulse, BOOT button triggers the case flow, auto-reconnect after an ESP32 reset.
+- [ ] Reconnect after a page reload: needs `navigator.bluetooth.getDevices()`, which this Chrome only offers behind `chrome://flags/#enable-web-bluetooth-new-permissions-backend`. Check on the phone; otherwise one tap on the dot after a reload.
+- [ ] Firmware: real commands (`LED:…`, `DRAWER:OPEN`).
 - [ ] Sensors: reed switch under the vial, hidden override button, language switch. The lid switch is optional now (no lid sequence anymore); at most it could require a closed lid for the reset.
 - [ ] Port the LED effects from `lights.h` and add a countdown effect.
 - [ ] Drawer latch servo.

@@ -9,6 +9,7 @@ import { RedQueenGame, type GameState } from "./game/game.js";
 import { GAME_RULES } from "./game/rules.js";
 import { runBootSequence } from "./render/boot.js";
 import { buildEmblem, showSpecimen } from "./render/standby.js";
+import { CaseLink } from "./hardware/caseLink.js";
 import { HologramRenderer } from "./render/hologram.js";
 import { ExpressionPicker } from "./render/mood.js";
 import { VoiceMeter } from "./render/voiceMeter.js";
@@ -31,6 +32,8 @@ const ui = {
   emblem: $("emblem"),
   specimen: $("specimen"),
   grace: $("grace"),
+  caseDot: $<HTMLButtonElement>("case-dot"),
+  caseStatus: $("case-status"),
   boot: $("boot"),
   connection: $("connection"),
   agentState: $("agent-state"),
@@ -63,6 +66,7 @@ const picker = new ExpressionPicker();
 const hologram = new HologramRenderer(ui.screen);
 const voiceMeter = new VoiceMeter();
 const voiceLines = new VoiceLinePlayer(voiceMeter);
+const caseLink = new CaseLink();
 let casePhase: CasePhase = "standby";
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
 let ticker: number | undefined;
@@ -93,6 +97,41 @@ ui.stop.addEventListener("click", abort);
 ui.mic.addEventListener("change", () => session?.setInputEnabled(ui.mic.checked));
 ui.overlay.addEventListener("click", () => (ui.overlay.hidden = true));
 ui.language.addEventListener("change", () => showSpecimen(ui.specimen, ui.language.value as Language));
+
+// The ESP32 in the case: the dot shows whether heartbeats arrive, the vial sensor drives the game.
+ui.caseDot.addEventListener("click", () => {
+  if (caseLink.status === "disconnected") caseLink.pick();
+});
+caseLink.onStatus((status) => {
+  ui.caseStatus.textContent = `case: ${status}`;
+  renderCaseDot();
+});
+caseLink.onMessage((message) => {
+  if (message.type === "heartbeat") {
+    ui.caseStatus.textContent = `case: HB #${message.counter} (up ${message.uptimeSeconds} s)`;
+    renderCaseDot();
+    // Restart the pulse animation for every heartbeat.
+    ui.caseDot.classList.remove("beat");
+    void ui.caseDot.offsetWidth;
+    ui.caseDot.classList.add("beat");
+  } else if (message.type === "unknown") {
+    logEvent(`case: unknown message "${message.line}"`);
+  }
+});
+caseLink.onVial((inPlace) => {
+  logEvent(`case: vial ${inPlace ? "put back" : "removed"}`);
+  if (inPlace) returnVial();
+  else if (casePhase === "standby") removeVial();
+});
+caseLink.onLog((text) => logEvent(`case: ${text}`));
+if (caseLink.status === "unsupported") ui.caseStatus.textContent = "case: no Web Bluetooth";
+window.setInterval(renderCaseDot, 500);
+caseLink.restore();
+
+function renderCaseDot() {
+  ui.caseDot.classList.toggle("alive", caseLink.alive);
+  ui.caseDot.title = caseLink.alive ? "Case connected" : `Case ${caseLink.status} – click to connect`;
+}
 
 // Keyboard stand-ins for the vial sensor until the ESP32 is connected: V = remove, B = put back.
 document.addEventListener("keydown", (e) => {

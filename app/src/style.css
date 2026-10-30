@@ -170,6 +170,35 @@ body.kiosk .screen {
   margin-top: 0.5rem;
 }
 
+/* Case link indicator */
+#case-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #c41e1e;
+  box-shadow: 0 0 6px #c41e1e;
+  cursor: pointer;
+  z-index: 2;
+}
+
+#case-dot.alive {
+  background: #2ecc55;
+  box-shadow: 0 0 6px #2ecc55;
+}
+
+#case-dot.beat {
+  animation: heartbeat 0.6s ease-out;
+}
+
+@keyframes heartbeat {
+  30% { transform: scale(1.6); box-shadow: 0 0 14px #2ecc55; }
+}
+
 #grace[hidden],
 #boot[hidden] {
   display: none;

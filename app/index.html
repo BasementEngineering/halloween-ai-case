@@ -15,12 +15,15 @@
         <div id="specimen"></div>
       </div>
       <div id="grace" hidden></div>
+      <!-- Link to the ESP32 in the case: red = no data, green = heartbeats arriving. Click to connect. -->
+      <button id="case-dot" title="Case link – click to connect"></button>
       <div id="boot" hidden></div>
     </div>
     <main>
       <header>
         <h1>RED QUEEN <span>test console</span></h1>
         <div class="status">
+          <span id="case-status">case: –</span>
           <span id="connection">disconnected</span>
           <span id="agent-state">–</span>
         </div>
