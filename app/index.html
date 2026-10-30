@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Red Queen – Test Console</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="screen">
+      <canvas id="screen"></canvas>
+      <!-- Standby: rotating logo (your own public/standby/logo.png, else the original emblem) and sample label -->
+      <div id="standby">
+        <div class="emblem-stage"><div id="emblem"></div></div>
+        <div id="specimen"></div>
+      </div>
+      <div id="grace" hidden></div>
+      <div id="boot" hidden></div>
+    </div>
+    <main>
+      <header>
+        <h1>RED QUEEN <span>test console</span></h1>
+        <div class="status">
+          <span id="connection">disconnected</span>
+          <span id="agent-state">–</span>
+        </div>
+      </header>
+
+      <section class="hud">
+        <div class="timer" id="timer">3:00</div>
+        <div class="trust">
+          <div class="trust-label">TRUST <span id="trust-value">10</span></div>
+          <div class="trust-bar">
+            <div class="trust-fill" id="trust-fill"></div>
+            <div class="trust-threshold" id="trust-threshold"></div>
+          </div>
+        </div>
+        <div class="code" id="code-status">Code attempts: 3</div>
+      </section>
+
+      <section class="controls">
+        <select id="language" title="Language of the Red Queen">
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+        <button id="remove-vial">Remove vial</button>
+        <button id="return-vial" disabled>Put vial back</button>
+        <button id="stop" disabled>End session</button>
+        <label><input type="checkbox" id="mic" checked disabled /> Mic on</label>
+      </section>
+
+      <section class="logs">
+        <div>
+          <h2>Conversation</h2>
+          <ol id="transcript"></ol>
+        </div>
+        <div>
+          <h2>Tool calls &amp; events</h2>
+          <ol id="events"></ol>
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay" id="overlay" hidden>
+      <div id="overlay-title"></div>
+      <div id="overlay-text"></div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

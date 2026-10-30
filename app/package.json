@@ -1,0 +1,26 @@
+{
+  "name": "red-queen-case",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Red Queen web app for the Resident Evil prop case",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "agent:sync": "tsx scripts/sync-agent.ts",
+    "voicelines": "tsx scripts/generate-voicelines.ts"
+  },
+  "dependencies": {
+    "@mistralai/mistralai": "^3.4.0",
+    "livekit-client": "^2.23.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

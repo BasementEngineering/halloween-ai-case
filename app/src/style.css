@@ -1,0 +1,333 @@
+:root {
+  --red: #ff2a2a;
+  --red-dim: #5a0d0d;
+  --bg: #0a0505;
+  --text: #f3d6d6;
+  font-family: "Consolas", "Courier New", monospace;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* The Red Queen's screen; on the phone this will be fullscreen. */
+.screen {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100vh;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  overflow: hidden;
+}
+
+#screen {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#standby {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  opacity: 0;
+  transition: opacity 0.6s;
+  pointer-events: none;
+}
+
+.screen.standby #standby,
+.screen.alert #standby,
+.screen.escalating #standby {
+  opacity: 1;
+}
+
+.screen.alert #standby {
+  animation: alert-blink 0.5s steps(2) infinite;
+}
+
+/* Seal failure: faster, harsher blinking until the startup animation begins. */
+.screen.escalating #standby {
+  animation: alert-blink 0.15s steps(2) infinite;
+}
+
+.screen.booting #standby {
+  opacity: 0;
+  animation: none;
+}
+
+/* Rotating 3D logo, built from stacked layers (see render/standby.ts). */
+.emblem-stage {
+  /* Fits portrait (phone) and landscape (laptop kiosk) screens. */
+  width: min(50%, 38vh);
+  aspect-ratio: 200 / 240;
+  perspective: 900px;
+}
+
+#emblem {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: emblem-spin 9s linear infinite;
+}
+
+#emblem img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes emblem-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+
+/* Sample label under the logo; lines fade in one after another. */
+#specimen {
+  width: min(84%, 60vh);
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 0.85;
+}
+
+#specimen div {
+  opacity: 0;
+  animation: fade-in 0.6s forwards;
+}
+
+#specimen .heading {
+  color: var(--red);
+  letter-spacing: 0.12em;
+}
+
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+
+/* Kiosk mode (?kiosk): only the screen, fullscreen. The test console is hidden. */
+body.kiosk main {
+  display: none;
+}
+
+body.kiosk .screen {
+  flex: 1;
+  aspect-ratio: auto;
+}
+
+#grace.failure {
+  font-size: 2rem;
+  font-weight: bold;
+  animation: alert-blink 0.15s steps(2) infinite;
+}
+
+@keyframes alert-blink {
+  50% { filter: sepia(1) saturate(8) hue-rotate(-50deg); opacity: 0.4; }
+}
+
+#grace {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12%;
+  text-align: center;
+  color: var(--red);
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+}
+
+#grace strong {
+  display: block;
+  font-size: 4rem;
+}
+
+#boot {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 10%;
+  color: var(--red);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  text-shadow: 0 0 6px var(--red);
+}
+
+#boot .online {
+  color: var(--text);
+  font-size: 1.4rem;
+  letter-spacing: 0.4em;
+  margin-top: 0.5rem;
+}
+
+#grace[hidden],
+#boot[hidden] {
+  display: none;
+}
+
+main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--red-dim);
+}
+
+h1 {
+  color: var(--red);
+  letter-spacing: 0.3em;
+  margin: 0 0 0.5rem;
+}
+
+h1 span {
+  font-size: 0.9rem;
+  letter-spacing: normal;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+h2 {
+  font-size: 0.9rem;
+  color: var(--red);
+  text-transform: uppercase;
+}
+
+.status span {
+  margin-left: 1rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--red-dim);
+}
+
+.hud {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 2rem;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.timer {
+  font-size: 4rem;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer.low {
+  animation: blink 1s steps(2) infinite;
+}
+
+.trust-bar {
+  position: relative;
+  height: 1.5rem;
+  border: 1px solid var(--red);
+  margin-top: 0.4rem;
+}
+
+.trust-fill {
+  height: 100%;
+  width: 10%;
+  background: var(--red);
+  transition: width 0.5s;
+}
+
+.trust-threshold {
+  position: absolute;
+  top: -0.3rem;
+  bottom: -0.3rem;
+  width: 2px;
+  background: var(--text);
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+button,
+select {
+  font: inherit;
+  background: var(--red-dim);
+  color: var(--text);
+  border: 1px solid var(--red);
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.logs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.logs ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  height: 55vh;
+  overflow-y: auto;
+  border: 1px solid var(--red-dim);
+  font-size: 0.85rem;
+}
+
+.logs li {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #1d0b0b;
+  white-space: pre-wrap;
+}
+
+.logs li.user::before { content: "YOU  "; color: #7fb3ff; }
+.logs li.assistant::before { content: "RQ   "; color: var(--red); }
+.logs li.partial { opacity: 0.5; }
+.logs li.error { color: #ffb02a; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 0, 0, 0.85);
+  text-align: center;
+  cursor: pointer;
+}
+
+.overlay[hidden] {
+  display: none;
+}
+
+#overlay-title {
+  font-size: 4rem;
+  color: var(--red);
+  letter-spacing: 0.2em;
+}
+
+.overlay.won #overlay-title {
+  color: #5cff7a;
+}
+
+@keyframes blink {
+  50% { opacity: 0.2; }
+}
