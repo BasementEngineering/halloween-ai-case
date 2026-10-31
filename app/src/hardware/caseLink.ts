@@ -24,6 +24,7 @@ export class CaseLink {
   private reconnectTimer?: number;
   private pingTimer?: number;
   private vialInPlace?: boolean;
+  private sending: Promise<void> = Promise.resolve();
   private readonly encoder = new TextEncoder();
   private readonly decoder = new TextDecoder();
   private readonly listeners = {
@@ -83,8 +84,11 @@ export class CaseLink {
     return true;
   }
 
-  async send(line: string) {
-    await this.rx?.writeValueWithoutResponse(this.encoder.encode(line));
+  // Writes one at a time: Chrome rejects a write while another is still in progress.
+  send(line: string): Promise<void> {
+    const write = this.sending.then(() => this.rx?.writeValueWithoutResponse(this.encoder.encode(line)));
+    this.sending = write.catch(() => {});
+    return write;
   }
 
   private use(device: BluetoothDevice) {

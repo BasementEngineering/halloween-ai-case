@@ -22,8 +22,13 @@ import { VoiceMeter } from "./render/voiceMeter.js";
 //      │◀──────────────────────┘                                                 │
 //      │                                                                          ▼
 //      └──────── vial back (reset line) ◀── over (won / failed) ◀────────────── game (3:00)
+//
+// Once the seal has broken, putting the vial back is ignored until the game is over
+// and her last line has finished. Case lights: white until the seal breaks, then
+// red/white blinking until the antidote is released.
 
 type CasePhase = "standby" | "alert" | "escalating" | "game" | "over";
+type CaseLights = "IDLE" | "ALERT" | "ESCALATE";
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const ui = {
@@ -75,6 +80,9 @@ let graceTimer: number | undefined;
 let agentState: Parameters<ExpressionPicker["setAgentState"]>[0] = "idle";
 let scriptedLine = false;
 const warningsPlayed = new Set<string>();
+let caseLights: CaseLights = "IDLE";
+// The vial went back while she was still saying her last line; reset once she's done.
+let resetWhenDone = false;
 
 ui.trustThreshold.style.left = `${GAME_RULES.trustToRelease}%`;
 renderState(game.state);
@@ -105,6 +113,7 @@ ui.caseDot.addEventListener("click", () => {
 caseLink.onStatus((status) => {
   ui.caseStatus.textContent = `case: ${status}`;
   renderCaseDot();
+  if (status === "connected") sendToCase(`LED:${caseLights}`);
 });
 caseLink.onMessage((message) => {
   if (message.type === "heartbeat") {
@@ -114,14 +123,19 @@ caseLink.onMessage((message) => {
     ui.caseDot.classList.remove("beat");
     void ui.caseDot.offsetWidth;
     ui.caseDot.classList.add("beat");
-  } else if (message.type === "unknown") {
-    logEvent(`case: unknown message "${message.line}"`);
+  } else if (message.type === "unknown" && message.line.startsWith("ERR:")) {
+    logEvent(`case: ${message.line}`, "error");
+  } else if (message.type === "unknown" && message.line.startsWith("DRAWER:")) {
+    logEvent(`case: ${message.line}`, message.line === "DRAWER:STUCK" ? "error" : "");
   }
 });
 caseLink.onVial((inPlace) => {
   logEvent(`case: vial ${inPlace ? "put back" : "removed"}`);
   if (inPlace) returnVial();
-  else if (casePhase === "standby") removeVial();
+  else {
+    resetWhenDone = false;
+    if (casePhase === "standby") removeVial();
+  }
 });
 caseLink.onLog((text) => logEvent(`case: ${text}`));
 if (caseLink.status === "unsupported") ui.caseStatus.textContent = "case: no Web Bluetooth";
@@ -142,6 +156,9 @@ document.addEventListener("keydown", (e) => {
 
 function setCasePhase(phase: CasePhase) {
   casePhase = phase;
+  if (phase === "standby" || phase === "alert") setCaseLights("IDLE");
+  else if (phase === "escalating") setCaseLights("ESCALATE");
+  else if (phase === "game") setCaseLights("ALERT");
   ui.screenBox.className = `screen ${phase}`;
   ui.removeVial.disabled = phase !== "standby";
   ui.returnVial.disabled = phase !== "alert" && phase !== "over";
@@ -193,7 +210,14 @@ async function returnVial() {
     setCasePhase("standby");
     await voiceLines.play(VOICE_LINES.vialReturned);
   } else if (casePhase === "over") {
-    resetCase();
+    if (session) {
+      resetWhenDone = true;
+      logEvent("vial put back: resetting after her last line");
+    } else {
+      resetCase();
+    }
+  } else if (casePhase === "escalating" || casePhase === "game") {
+    logEvent("vial put back: ignored, the seal is broken");
   }
 }
 
@@ -357,7 +381,9 @@ async function playScripted(ids: readonly string[]) {
 
 // Vial back after a game: she says goodbye, then the standby logo returns.
 async function resetCase() {
+  resetWhenDone = false;
   ui.overlay.hidden = true;
+  sendToCase("DRAWER:CLOSE");
   ui.returnVial.disabled = true;
   picker.reset(GAME_RULES.trustStart);
   hologram.burst(0.6);
@@ -383,6 +409,7 @@ function onTick() {
     stopTicker();
     setCasePhase("over");
     showOverlay("failed", "INFECTION COMPLETE", "The 3 minutes are up.");
+    // The lights keep blinking: the case stays contaminated until it's reset.
     hologram.burst(1);
     voiceLines.stop();
     endSession("time is up").then(() => playScripted(VOICE_LINES.fail));
@@ -390,7 +417,10 @@ function onTick() {
     stopTicker();
     setCasePhase("over");
     const how = state.winReason === "code" ? "Valid clearance code." : `Trust reached ${state.trust}.`;
-    showOverlay("won", "ANTIDOTE RELEASED", `${how} (drawer would open now)`);
+    showOverlay("won", "ANTIDOTE RELEASED", how);
+    setCaseLights("IDLE");
+    if (caseLink.status === "connected") sendToCase("DRAWER:OPEN");
+    else logEvent("case not connected: the drawer can't open", "error");
     endAfterFinalLine();
   }
 }
@@ -424,6 +454,17 @@ async function endSession(reason: string) {
   if (!current) return;
   logEvent(`closing session: ${reason}`);
   await current.close();
+  if (casePhase === "over" && resetWhenDone) resetCase();
+}
+
+function setCaseLights(effect: CaseLights) {
+  caseLights = effect;
+  sendToCase(`LED:${effect}`);
+}
+
+function sendToCase(line: string) {
+  if (caseLink.status !== "connected") return;
+  caseLink.send(line).catch((error) => logEvent(`case: sending ${line} failed: ${error}`, "error"));
 }
 
 function stopTicker() {

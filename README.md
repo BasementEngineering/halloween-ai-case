@@ -38,12 +38,14 @@ Run `npm test` for the game-rule tests.
 | Path | Contents |
 |---|---|
 | `app/` | Red Queen web app (in progress). `npm run agent:sync` creates/updates the Mistral agent |
+| [`firmware/`](firmware/README.md) | ESP32 firmware: case controller (C3) and BLE test (WROOM), protocol |
 | `Halloween_Case/` | 2024 ESP8266 firmware (to be archived) |
 | `Content/GladosVoicelines/` | 2024 voice lines, reused as the case computer's voice |
 | [`oldcase.md`](oldcase.md) | How the 2024 case works |
 | [`docs/redqueen-persona.md`](docs/redqueen-persona.md) | Red Queen character, game rules, system prompt, fixed lines |
 | [`docs/redqueen-visuals.md`](docs/redqueen-visuals.md) | Character design and image/video prompts |
 | [`docs/redqueen-voicelines.md`](docs/redqueen-voicelines.md) | 20 pre-recorded Red Queen lines |
+| [`docs/hardware.md`](docs/hardware.md) | 2026 wiring: ESP32-C3 pin map, sensor, drawer, mist maker, power |
 | [`docs/mistral-setup.md`](docs/mistral-setup.md) | Red Queen voice agent on Mistral (Voxtral) |
 | [`docs/elevenlabs-setup.md`](docs/elevenlabs-setup.md) | Alternative: ElevenLabs agent (not used) |
 

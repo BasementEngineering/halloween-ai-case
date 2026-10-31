@@ -41,22 +41,25 @@ Goal: the Red Queen case, ready to publish by **2026-11-15**. The concept is in 
 
 ## Phase 3: ESP32 and Bluetooth
 
-- [x] Board: ESP32-WROOM-32 DevKit (on COM14 during development).
+- [x] Board: ESP32-WROOM-32 DevKit for testing (on COM14). The final case uses an **ESP32-C3 Super Mini**; wiring in [hardware.md](hardware.md).
+- [x] **Case controller firmware** (`firmware/redqueen-case/`, see [firmware/README.md](../firmware/README.md)): VL53L1X vial sensor, drawer motor with limit switches and timeout, mist maker, ported light effects, override button, standalone mode, serial test commands. Flashed to the C3 (COM15) and tested over serial without hardware attached.
+- [ ] Connect the app to the C3 and compare range and reconnecting with the WROOM.
+- [ ] Test each part once it's wired: calibrate the vial sensor, set the motor speed and run times, check the mist maker and LEDs.
+- [x] App drives the case: white lights until the seal breaks, then red/white blinking (fast during the seal failure) until the antidote is released. A win sends `DRAWER:OPEN`, the reset `DRAWER:CLOSE`. `ERR:…` and `DRAWER:STUCK` show in the console.
+- [x] Once the seal has broken, putting the vial back is ignored; after the game it resets the case once her last line has finished.
+- [ ] Test the full flow with the C3 and the real hardware.
 - [x] **BLE test firmware** (`firmware/esp32-ble-test/`): Nordic UART Service, heartbeat `HB:<n>:<uptime>` every 2 s, BOOT button as fake vial (`VIAL:0/1`), `PING`/`PONG`, advertising restarts after a disconnect. Flash with arduino-cli (bundled with the Arduino IDE), core `esp32:esp32` 2.0.14.
 - [x] **App side:** `CaseLink` with auto-reconnect (1, 2, 4, 8, 10 s) and a pulsing dot (green = heartbeats arriving, red = none for 5 s). The vial events drive the case flow.
 - [x] **Tested on the laptop (2026-10-30):** connect via the dot, heartbeat pulse, BOOT button triggers the case flow, auto-reconnect after an ESP32 reset.
 - [ ] Reconnect after a page reload: needs `navigator.bluetooth.getDevices()`, which this Chrome only offers behind `chrome://flags/#enable-web-bluetooth-new-permissions-backend`. Check on the phone; otherwise one tap on the dot after a reload.
-- [ ] Firmware: real commands (`LED:…`, `DRAWER:OPEN`).
-- [ ] Sensors: reed switch under the vial, hidden override button, language switch. The lid switch is optional now (no lid sequence anymore); at most it could require a closed lid for the reset.
-- [ ] Port the LED effects from `lights.h` and add a countdown effect.
-- [ ] Drawer latch servo.
-- [ ] Standalone fallback: lights and override button work without the phone.
+- [ ] Sensors: VL53L1X time-of-flight sensor for the vial, hidden override button, "drawer closed" end switch. Lid switch: no lid sequence anymore, but the LEDs turn on white when the lid opens (in the firmware).
+- [ ] Drawer: DC motor with rubber-band slip drive on a DRV8833, plus the mist maker (MOSFET) when it opens.
 - [ ] Web Bluetooth connection in the app, replacing the start button.
 
 ## Phase 4: hardware build
 
 - [ ] Vial: coin cell, red LED and reed switch, so it lights up when taken out of the holder.
-- [ ] Spring-loaded antidote drawer with servo latch.
+- [ ] Motorised antidote drawer (rubber-band slip drive, "drawer closed" switch) and mist maker, wired as in [hardware.md](hardware.md).
 - [ ] Phone mount in the lid, wiring, power from the power bank to phone and ESP32.
 
 ## Phase 5: polish and publish
@@ -77,7 +80,7 @@ The goal is a hardware switch for English or German. What has to change:
 - [x] **Voice:** the existing Red Queen voice speaks German out of the box (cross-lingual cloning), with a slight English accent that fits her. No second voice needed.
 - [x] **Pre-recorded lines:** German versions of all 20 lines, generated.
 - [x] **Clearance code:** German number words (eins, zwei, … sieben, fünf) are accepted.
-- [ ] **App:** language chosen by the switch (via the ESP32), with German UI text.
+- [ ] **App:** language chosen with a hidden gesture on the standby screen (long-press on the logo, only in standby, saved on the phone), with German UI text. No hardware switch.
 
 ## Notes
 

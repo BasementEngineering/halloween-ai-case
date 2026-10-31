@@ -1,5 +1,5 @@
 // Text protocol between the app and the ESP32 in the case, over the Nordic UART Service.
-// See firmware/esp32-ble-test/esp32-ble-test.ino.
+// See firmware/README.md.
 
 export const DEVICE_NAME = "RedQueenCase";
 export const NUS_SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
