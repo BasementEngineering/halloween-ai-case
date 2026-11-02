@@ -1,4 +1,5 @@
-import type { AudioSessionCreateResponse } from "@mistralai/mistralai/models/components";
+import { KeepAwake } from "@capacitor-community/keep-awake";
+import { Capacitor } from "@capacitor/core";
 import type { BrowserVoiceEventMap, VoiceAgentSession } from "@mistralai/mistralai/extra/voice-agents";
 import { initSession } from "@mistralai/mistralai/extra/voice-agents/browser";
 import type { Language } from "./agent/config.js";
@@ -10,6 +11,7 @@ import { GAME_RULES } from "./game/rules.js";
 import { runBootSequence } from "./render/boot.js";
 import { buildEmblem, showSpecimen } from "./render/standby.js";
 import { CaseLink } from "./hardware/caseLink.js";
+import { createBackend } from "./platform/backend.js";
 import { HologramRenderer } from "./render/hologram.js";
 import { ExpressionPicker } from "./render/mood.js";
 import { VoiceMeter } from "./render/voiceMeter.js";
@@ -40,6 +42,10 @@ const ui = {
   caseDot: $<HTMLButtonElement>("case-dot"),
   caseStatus: $("case-status"),
   boot: $("boot"),
+  screenTimer: $("screen-timer"),
+  screenTrustFill: $("screen-trust-fill"),
+  screenTrustThreshold: $("screen-trust-threshold"),
+  notice: $("notice"),
   connection: $("connection"),
   agentState: $("agent-state"),
   timer: $("timer"),
@@ -65,6 +71,10 @@ const GRACE_SECONDS = 10;
 const SEAL_FAILS_AFTER_SECONDS = 7;
 // Max time to let her finish her last line after the game has ended.
 const FINAL_LINE_TIMEOUT_MS = 15_000;
+// Hidden gesture: holding the standby screen this long switches the language.
+const LANGUAGE_HOLD_MS = 2000;
+const LANGUAGE_KEY = "redqueen.language";
+const native = Capacitor.isNativePlatform();
 
 const game = new RedQueenGame();
 const picker = new ExpressionPicker();
@@ -72,6 +82,7 @@ const hologram = new HologramRenderer(ui.screen);
 const voiceMeter = new VoiceMeter();
 const voiceLines = new VoiceLinePlayer(voiceMeter);
 const caseLink = new CaseLink();
+const backend = createBackend();
 let casePhase: CasePhase = "standby";
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
 let ticker: number | undefined;
@@ -85,13 +96,17 @@ let caseLights: CaseLights = "IDLE";
 let resetWhenDone = false;
 
 ui.trustThreshold.style.left = `${GAME_RULES.trustToRelease}%`;
+ui.screenTrustThreshold.style.left = `${GAME_RULES.trustToRelease}%`;
 renderState(game.state);
 game.onChange(renderState);
 game.onChange((state) => picker.setPhase(state.phase));
-// ?kiosk shows only the screen, as on the phone in the case; otherwise the test console is next to it.
-document.body.classList.toggle("kiosk", new URLSearchParams(location.search).has("kiosk"));
+// The phone app and ?kiosk show only the screen; otherwise the test console is next to it.
+document.body.classList.toggle("kiosk", native || new URLSearchParams(location.search).has("kiosk"));
+ui.language.value = localStorage.getItem(LANGUAGE_KEY) ?? "en";
 buildEmblem(ui.emblem);
 setCasePhase("standby");
+backend.catch((error) => showNotice(String(error.message ?? error)));
+if (native) startOnPhone();
 
 requestAnimationFrame(function updateHologram() {
   hologram.setVoiceLevel(voiceMeter.read());
@@ -104,7 +119,17 @@ ui.returnVial.addEventListener("click", returnVial);
 ui.stop.addEventListener("click", abort);
 ui.mic.addEventListener("change", () => session?.setInputEnabled(ui.mic.checked));
 ui.overlay.addEventListener("click", () => (ui.overlay.hidden = true));
-ui.language.addEventListener("change", () => showSpecimen(ui.specimen, ui.language.value as Language));
+ui.language.addEventListener("change", () => setLanguage(ui.language.value as Language));
+
+// Hidden gesture for the phone: hold the standby screen to switch between English and German.
+let languageHold: number | undefined;
+ui.screenBox.addEventListener("pointerdown", (e) => {
+  if (casePhase !== "standby" || e.target === ui.caseDot) return;
+  languageHold = window.setTimeout(() => setLanguage(ui.language.value === "en" ? "de" : "en"), LANGUAGE_HOLD_MS);
+});
+for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+  ui.screenBox.addEventListener(type, () => window.clearTimeout(languageHold));
+}
 
 // The ESP32 in the case: the dot shows whether heartbeats arrive, the vial sensor drives the game.
 ui.caseDot.addEventListener("click", () => {
@@ -153,6 +178,32 @@ document.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "v" && casePhase === "standby") removeVial();
   if (e.key.toLowerCase() === "b") returnVial();
 });
+
+// The phone in the case: screen always on, and the mic permission up front
+// (not in the middle of the first game).
+async function startOnPhone() {
+  await KeepAwake.keepAwake().catch((error) => logEvent(`keep awake failed: ${error}`, "error"));
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of stream.getTracks()) track.stop();
+  } catch (error) {
+    showNotice(`no microphone access: ${error}`);
+  }
+}
+
+function setLanguage(language: Language) {
+  ui.language.value = language;
+  localStorage.setItem(LANGUAGE_KEY, language);
+  // The label fades in again in the new language, which doubles as the confirmation.
+  showSpecimen(ui.specimen, language);
+  logEvent(`language: ${language}`);
+}
+
+function showNotice(text: string) {
+  ui.notice.textContent = text;
+  ui.notice.hidden = false;
+  logEvent(text, "error");
+}
 
 function setCasePhase(phase: CasePhase) {
   casePhase = phase;
@@ -279,7 +330,7 @@ async function connectSession(): Promise<boolean> {
         logEvent(`verify_clearance_code "${code}" → locked`);
         return { valid: false, attempts_left: game.state.codeAttemptsLeft };
       }
-      const { valid } = await postJson<{ valid: boolean }>("/api/verify-code", { code });
+      const valid = await (await backend).verifyCode(code);
       const result = game.registerCodeAttempt(valid);
       picker.onCodeResult(valid);
       logEvent(`verify_clearance_code "${code}" → ${valid ? "VALID" : "invalid"}, ${result.attempts_left} left`);
@@ -295,13 +346,8 @@ async function connectSession(): Promise<boolean> {
   try {
     session = await initSession({
       tools,
-      createSession: async (declarations) => {
-        const raw = await postJson<any>("/api/voice-session", { tools: declarations, language: ui.language.value });
-        return { ...raw, createdAt: new Date(raw.createdAt), expiresAt: new Date(raw.expiresAt) } as AudioSessionCreateResponse;
-      },
-      deleteSession: async (sessionId) => {
-        await fetch(`/api/voice-session?sessionId=${encodeURIComponent(sessionId)}`, { method: "DELETE" });
-      },
+      createSession: async (declarations) => (await backend).createVoiceSession(declarations, ui.language.value as Language),
+      deleteSession: async (sessionId) => (await backend).closeVoiceSession(sessionId),
     });
   } catch (error) {
     setConnection("error");
@@ -475,10 +521,14 @@ function stopTicker() {
 function renderState(state: GameState) {
   const minutes = Math.floor(state.secondsLeft / 60);
   const seconds = String(state.secondsLeft % 60).padStart(2, "0");
-  ui.timer.textContent = `${minutes}:${seconds}`;
-  ui.timer.classList.toggle("low", state.phase === "running" && state.secondsLeft <= 30);
+  const low = state.phase === "running" && state.secondsLeft <= 30;
+  for (const timer of [ui.timer, ui.screenTimer]) {
+    timer.textContent = `${minutes}:${seconds}`;
+    timer.classList.toggle("low", low);
+  }
   ui.trustValue.textContent = String(state.trust);
   ui.trustFill.style.width = `${state.trust}%`;
+  ui.screenTrustFill.style.width = `${state.trust}%`;
   ui.codeStatus.textContent = state.codeVerified
     ? "Code: VERIFIED"
     : state.codeAttemptsLeft > 0
@@ -515,14 +565,4 @@ function showOverlay(kind: "won" | "failed", title: string, text: string) {
   ui.overlayTitle.textContent = title;
   ui.overlayText.textContent = text;
   ui.overlay.hidden = false;
-}
-
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`${url}: ${response.status} ${await response.text()}`);
-  return response.json() as Promise<T>;
 }

@@ -15,9 +15,22 @@
         <div id="specimen"></div>
       </div>
       <div id="grace" hidden></div>
+      <!-- In-game display on her screen: time left and how far she trusts the player -->
+      <div id="screen-hud">
+        <div id="screen-timer">3:00</div>
+        <div class="screen-trust">
+          <span>TRUST</span>
+          <div class="screen-trust-bar">
+            <div id="screen-trust-fill"></div>
+            <div id="screen-trust-threshold"></div>
+          </div>
+        </div>
+      </div>
       <!-- Link to the ESP32 in the case: red = no data, green = heartbeats arriving. Click to connect. -->
       <button id="case-dot" title="Case link – click to connect"></button>
       <div id="boot" hidden></div>
+      <!-- Setup problems (missing config, no mic), so they show on the phone too -->
+      <div id="notice" hidden></div>
     </div>
     <main>
       <header>

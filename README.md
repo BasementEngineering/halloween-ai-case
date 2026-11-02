@@ -45,6 +45,7 @@ Run `npm test` for the game-rule tests.
 | [`docs/redqueen-persona.md`](docs/redqueen-persona.md) | Red Queen character, game rules, system prompt, fixed lines |
 | [`docs/redqueen-visuals.md`](docs/redqueen-visuals.md) | Character design and image/video prompts |
 | [`docs/redqueen-voicelines.md`](docs/redqueen-voicelines.md) | 20 pre-recorded Red Queen lines |
+| [`docs/phone-setup.md`](docs/phone-setup.md) | Android app for the phone in the case (Capacitor): setup, build, secrets |
 | [`docs/hardware.md`](docs/hardware.md) | 2026 wiring: ESP32-C3 pin map, sensor, drawer, mist maker, power |
 | [`docs/mistral-setup.md`](docs/mistral-setup.md) | Red Queen voice agent on Mistral (Voxtral) |
 | [`docs/elevenlabs-setup.md`](docs/elevenlabs-setup.md) | Alternative: ElevenLabs agent (not used) |

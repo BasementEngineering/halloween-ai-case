@@ -116,6 +116,25 @@ body {
   to { opacity: 1; }
 }
 
+/* Landscape kiosk (the phone in the lid): logo on the left, label on the right,
+   both sized to the screen height. */
+@media (orientation: landscape) {
+  body.kiosk #standby {
+    flex-direction: row;
+  }
+
+  body.kiosk .emblem-stage {
+    width: auto;
+    height: min(70vh, 40vw);
+  }
+
+  body.kiosk #specimen {
+    width: 45%;
+    text-align: left;
+    font-size: clamp(0.6rem, 3.6vh, 0.9rem);
+  }
+}
+
 /* Kiosk mode (?kiosk): only the screen, fullscreen. The test console is hidden. */
 body.kiosk main {
   display: none;
@@ -170,6 +189,68 @@ body.kiosk .screen {
   margin-top: 0.5rem;
 }
 
+/* In-game display on her screen: only during the game and on the result. */
+#screen-hud {
+  position: absolute;
+  top: 8px;
+  left: 16px;
+  right: 44px;
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--red);
+  text-shadow: 0 0 6px var(--red);
+  pointer-events: none;
+}
+
+.screen.game #screen-hud,
+.screen.over #screen-hud {
+  display: flex;
+}
+
+#screen-timer {
+  font-size: 1.8rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+
+#screen-timer.low {
+  animation: blink 1s steps(2) infinite;
+}
+
+.screen-trust {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+}
+
+.screen-trust-bar {
+  position: relative;
+  flex: 1;
+  max-width: 18rem;
+  height: 0.6rem;
+  border: 1px solid var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+
+#screen-trust-fill {
+  height: 100%;
+  width: 10%;
+  background: var(--red);
+  transition: width 0.5s;
+}
+
+#screen-trust-threshold {
+  position: absolute;
+  top: -0.25rem;
+  bottom: -0.25rem;
+  width: 2px;
+  background: var(--text);
+}
+
 /* Case link indicator */
 #case-dot {
   position: absolute;
@@ -199,8 +280,18 @@ body.kiosk .screen {
   30% { transform: scale(1.6); box-shadow: 0 0 14px #2ecc55; }
 }
 
+#notice {
+  position: absolute;
+  left: 12px;
+  right: 40px;
+  top: 10px;
+  color: #ffb02a;
+  font-size: 0.75rem;
+}
+
 #grace[hidden],
-#boot[hidden] {
+#boot[hidden],
+#notice[hidden] {
   display: none;
 }
 

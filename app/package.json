@@ -9,14 +9,23 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "agent:sync": "tsx scripts/sync-agent.ts",
-    "voicelines": "tsx scripts/generate-voicelines.ts"
+    "voicelines": "tsx scripts/generate-voicelines.ts",
+    "phone": "tsx scripts/phone.ts",
+    "phone:config": "tsx scripts/phone-config.ts"
   },
   "dependencies": {
+    "@capacitor-community/bluetooth-le": "^8.3.0",
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
     "@mistralai/mistralai": "^3.4.0",
+    "@opentelemetry/api": "^1.10.0",
     "livekit-client": "^2.23.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.0",
     "@types/node": "^26.6.6",
     "@types/web-bluetooth": "^0.0.22",
     "tsx": "^4.23.15",

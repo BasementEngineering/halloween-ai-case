@@ -1,4 +1,6 @@
 /// <reference types="web-bluetooth" />
+import { BleClient } from "@capacitor-community/bluetooth-le";
+import { Capacitor } from "@capacitor/core";
 import {
   DEVICE_NAME,
   isAlive,
@@ -13,13 +15,21 @@ import {
 
 export type LinkStatus = "unsupported" | "disconnected" | "connecting" | "connected";
 
+const STORED_DEVICE_KEY = "redqueen.caseDevice";
+// On the phone: after this many failed attempts with the remembered case, search again
+// (e.g. the ESP32 board was swapped).
+const ATTEMPTS_BEFORE_RESCAN = 3;
+
 // Bluetooth link to the ESP32 in the case: connects, keeps it alive with pings,
-// and reconnects automatically when the connection drops.
+// and reconnects automatically when the connection drops. Uses the native Bluetooth
+// stack in the phone app and Web Bluetooth in the browser.
 export class CaseLink {
-  status: LinkStatus = navigator.bluetooth ? "disconnected" : "unsupported";
+  status: LinkStatus = Capacitor.isNativePlatform() || navigator.bluetooth ? "disconnected" : "unsupported";
   lastHeartbeat?: number;
-  private device?: BluetoothDevice;
-  private rx?: BluetoothRemoteGATTCharacteristic;
+  private readonly native = Capacitor.isNativePlatform();
+  private deviceId?: string;
+  private initialized?: Promise<void>;
+  private scanning = false;
   private reconnectAttempt = 0;
   private reconnectTimer?: number;
   private pingTimer?: number;
@@ -55,88 +65,135 @@ export class CaseLink {
     this.listeners.log.push(listener);
   }
 
-  // Shows Chrome's device picker; must be called from a click.
+  // Shows the device picker; in the browser it must be called from a click.
   async pick() {
-    if (!navigator.bluetooth) return;
+    if (this.status === "unsupported") return;
     try {
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: DEVICE_NAME }],
-        optionalServices: [NUS_SERVICE],
-      });
-      this.use(device);
+      await this.init();
+      const device = await BleClient.requestDevice({ namePrefix: DEVICE_NAME, optionalServices: [NUS_SERVICE] });
+      this.use(device.deviceId);
       await this.connect();
     } catch (error) {
       this.log(`picker closed: ${error}`);
     }
   }
 
-  // Reconnects to a device allowed earlier, without the picker. Needs getDevices(),
-  // which some Chrome versions only offer behind a flag.
+  // Connects without the picker. The phone app reconnects to the remembered case, or
+  // searches for one. The browser needs getDevices(), which some Chrome versions only
+  // offer behind a flag.
   async restore(): Promise<boolean> {
-    if (!navigator.bluetooth?.getDevices) {
-      this.log("getDevices() not available: click the dot to connect");
+    if (this.status === "unsupported") return false;
+    const stored = localStorage.getItem(STORED_DEVICE_KEY);
+    try {
+      await this.init();
+      if (this.native) {
+        if (stored) {
+          this.use(stored);
+          await this.connect();
+        } else {
+          await this.scan();
+        }
+        return true;
+      }
+      if (!navigator.bluetooth?.getDevices) {
+        this.log("getDevices() not available: click the dot to connect");
+        return false;
+      }
+      const [device] = stored ? await BleClient.getDevices([stored]) : [];
+      if (!device) return false;
+      this.use(device.deviceId);
+      await this.connect();
+      return true;
+    } catch (error) {
+      this.log(`restore failed: ${error}`);
       return false;
     }
-    const device = (await navigator.bluetooth.getDevices()).find((d) => d.name?.startsWith(DEVICE_NAME));
-    if (!device) return false;
-    this.use(device);
-    await this.connect();
-    return true;
   }
 
-  // Writes one at a time: Chrome rejects a write while another is still in progress.
+  // Writes one at a time: a write while another is still in progress is rejected.
   send(line: string): Promise<void> {
-    const write = this.sending.then(() => this.rx?.writeValueWithoutResponse(this.encoder.encode(line)));
+    const deviceId = this.deviceId;
+    const write = this.sending.then(async () => {
+      if (!deviceId || this.status !== "connected") return;
+      await BleClient.writeWithoutResponse(deviceId, NUS_SERVICE, NUS_RX, new DataView(this.encoder.encode(line).buffer));
+    });
     this.sending = write.catch(() => {});
     return write;
   }
 
-  private use(device: BluetoothDevice) {
-    if (this.device === device) return;
-    this.device = device;
-    device.addEventListener("gattserverdisconnected", () => {
-      this.log("disconnected");
-      this.stopPing();
-      this.rx = undefined;
-      this.setStatus("disconnected");
-      this.scheduleReconnect();
+  private init(): Promise<void> {
+    // On Android 12+ scanning then needs no location permission; Android 11 and older still do.
+    this.initialized ??= BleClient.initialize({ androidNeverForLocation: true });
+    return this.initialized;
+  }
+
+  // Phone app: searches until a case shows up, then connects to the first one.
+  private async scan() {
+    if (this.scanning) return;
+    this.scanning = true;
+    this.setStatus("connecting");
+    this.log("searching for the case…");
+    await BleClient.requestLEScan({ namePrefix: DEVICE_NAME }, async (result) => {
+      if (!this.scanning) return;
+      this.scanning = false;
+      await BleClient.stopLEScan();
+      this.log(`found ${result.device.name ?? result.device.deviceId}`);
+      this.use(result.device.deviceId);
+      await this.connect();
     });
   }
 
+  private use(deviceId: string) {
+    this.deviceId = deviceId;
+    localStorage.setItem(STORED_DEVICE_KEY, deviceId);
+  }
+
   private async connect() {
-    const device = this.device;
-    if (!device?.gatt) return;
+    const deviceId = this.deviceId;
+    if (!deviceId) return;
     window.clearTimeout(this.reconnectTimer);
     this.setStatus("connecting");
     try {
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService(NUS_SERVICE);
-      const tx = await service.getCharacteristic(NUS_TX);
-      this.rx = await service.getCharacteristic(NUS_RX);
-      tx.addEventListener("characteristicvaluechanged", () => this.receive(tx.value));
-      await tx.startNotifications();
+      await BleClient.connect(deviceId, (id) => this.onDisconnected(id), { timeout: 10_000 });
+      await BleClient.startNotifications(deviceId, NUS_SERVICE, NUS_TX, (value) => this.receive(value));
       this.reconnectAttempt = 0;
       this.vialInPlace = undefined;
       this.setStatus("connected");
-      this.log(`connected to ${device.name}`);
+      this.log(`connected to ${deviceId}`);
       this.startPing();
     } catch (error) {
       this.log(`connect failed: ${error}`);
+      await BleClient.disconnect(deviceId).catch(() => {});
       this.setStatus("disconnected");
       this.scheduleReconnect();
     }
   }
 
+  private onDisconnected(deviceId: string) {
+    if (deviceId !== this.deviceId || this.status === "disconnected") return;
+    this.log("disconnected");
+    this.stopPing();
+    this.setStatus("disconnected");
+    this.scheduleReconnect();
+  }
+
   private scheduleReconnect() {
-    if (!this.device) return;
+    if (!this.deviceId) return;
+    if (this.native && this.reconnectAttempt >= ATTEMPTS_BEFORE_RESCAN) {
+      this.log("remembered case not reachable: searching again");
+      this.reconnectAttempt = 0;
+      localStorage.removeItem(STORED_DEVICE_KEY);
+      this.deviceId = undefined;
+      this.scan().catch((error) => this.log(`scan failed: ${error}`));
+      return;
+    }
     const delay = reconnectDelay(this.reconnectAttempt++);
     this.log(`reconnecting in ${delay / 1000} s`);
     window.clearTimeout(this.reconnectTimer);
     this.reconnectTimer = window.setTimeout(() => this.connect(), delay);
   }
 
-  private receive(value?: DataView) {
-    if (!value) return;
+  private receive(value: DataView) {
     const message = parseLine(this.decoder.decode(value));
     if (message.type === "heartbeat") this.lastHeartbeat = performance.now();
     if (message.type === "vial") {

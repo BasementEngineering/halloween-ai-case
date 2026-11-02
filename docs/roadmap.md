@@ -33,11 +33,16 @@ Goal: the Red Queen case, ready to publish by **2026-11-15**. The concept is in 
 
 ## Phase 2: old Android phone as screen, speaker and mic
 
-- [ ] Find out the phone's model and Android version; a current Chrome is needed (WebRTC, Web Bluetooth, Wake Lock).
-- [ ] Fullscreen layout without the test console, plus a hidden debug view.
-- [ ] Keep the screen on (Wake Lock API); the phone runs from the power bank.
-- [ ] Host the app (HTTPS) and move the session endpoint into a small serverless function, protected so strangers can't start sessions on our bill.
+Setup and build: [phone-setup.md](phone-setup.md).
+
+- [x] Phone: Samsung Galaxy A40 (Android 11 at most).
+- [x] **Capacitor app** (`app/android/`, `npm run phone`): kiosk view, screen kept on, fullscreen, portrait, mic permission at start, native Bluetooth with auto-reconnect and search. Builds with Android Studio's JDK 25, Gradle 9.2 and a Java 21 toolchain for the plugins.
+- [x] **Secrets on the phone (option A):** `npm run phone:config` copies key, agent IDs and clearance code from `.env` into the app's private storage over USB; not in the APK, Android backup off. The app calls Mistral directly (CORS allows it).
+- [x] Language: hold the standby screen for 2 s (remembered).
+- [ ] First install and full test round on the phone.
+- [ ] Hidden debug view on the phone (for now `chrome://inspect` over USB).
 - [ ] Test with the main phone as hotspot; test mic and echo cancellation at party volume.
+- [ ] Option B for later: a small server that holds the key, if the phone or APK is ever handed out.
 
 ## Phase 3: ESP32 and Bluetooth
 
@@ -54,7 +59,6 @@ Goal: the Red Queen case, ready to publish by **2026-11-15**. The concept is in 
 - [ ] Reconnect after a page reload: needs `navigator.bluetooth.getDevices()`, which this Chrome only offers behind `chrome://flags/#enable-web-bluetooth-new-permissions-backend`. Check on the phone; otherwise one tap on the dot after a reload.
 - [ ] Sensors: VL53L1X time-of-flight sensor for the vial, hidden override button, "drawer closed" end switch. Lid switch: no lid sequence anymore, but the LEDs turn on white when the lid opens (in the firmware).
 - [ ] Drawer: DC motor with rubber-band slip drive on a DRV8833, plus the mist maker (MOSFET) when it opens.
-- [ ] Web Bluetooth connection in the app, replacing the start button.
 
 ## Phase 4: hardware build
 
