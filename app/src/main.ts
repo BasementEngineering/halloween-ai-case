@@ -4,7 +4,7 @@ import type { BrowserVoiceEventMap, VoiceAgentSession } from "@mistralai/mistral
 import { initSession } from "@mistralai/mistralai/extra/voice-agents/browser";
 import type { Language } from "./agent/config.js";
 import { createRedQueenTools } from "./agent/tools.js";
-import { playAlert } from "./audio/alert.js";
+import { playAlert, stopAlert } from "./audio/alert.js";
 import { VOICE_LINES, VoiceLinePlayer, WARNINGS } from "./audio/voicelines.js";
 import { RedQueenGame, type GameState } from "./game/game.js";
 import { GAME_RULES } from "./game/rules.js";
@@ -95,6 +95,9 @@ let casePhase: CasePhase = "standby";
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
 let ticker: number | undefined;
 let graceTimer: number | undefined;
+// Counts vial removals, so a removal sequence still waiting on a sound stops once the
+// vial was put back (and maybe pulled again) in the meantime.
+let removalRun = 0;
 // The agent's real state; the hologram ignores it while a pre-recorded line plays.
 let agentState: Parameters<ExpressionPicker["setAgentState"]>[0] = "idle";
 let scriptedLine = false;
@@ -276,15 +279,18 @@ function setCasePhase(phase: CasePhase) {
 
 // The case computer raises the alarm; the player has a few seconds to undo it.
 async function removeVial() {
+  const run = ++removalRun;
+  const current = () => casePhase === "alert" && run === removalRun;
   setCasePhase("alert");
   ui.overlay.hidden = true;
   voiceMeter.resume();
+  voiceLines.stop(); // e.g. the "vial returned" line from a moment ago
   voiceLines.language = ui.language.value as Language;
 
   await playAlert();
-  if (casePhase !== "alert") return;
+  if (!current()) return;
   await voiceLines.play(VOICE_LINES.vialRemoved);
-  if (casePhase !== "alert") return;
+  if (!current()) return;
 
   const started = performance.now();
   // The inside LEDs fill red over the same 10 s as the on-screen countdown.
@@ -306,14 +312,17 @@ async function removeVial() {
     ui.grace.replaceChildren("RETURN SAMPLE", count);
   };
   ui.grace.hidden = false;
+  window.clearInterval(graceTimer);
   update();
   graceTimer = window.setInterval(update, 200);
 }
 
 async function returnVial() {
   if (casePhase === "alert") {
+    removalRun++;
     window.clearInterval(graceTimer);
     ui.grace.hidden = true;
+    stopAlert();
     voiceLines.stop();
     setCasePhase("standby");
     await voiceLines.play(VOICE_LINES.vialReturned);
@@ -453,6 +462,8 @@ async function connectSession(): Promise<boolean> {
 
 // Operator stop, or the connection dropped: back to standby.
 function abort() {
+  removalRun++;
+  stopAlert();
   window.clearInterval(graceTimer);
   ui.grace.hidden = true;
   ui.boot.hidden = true;

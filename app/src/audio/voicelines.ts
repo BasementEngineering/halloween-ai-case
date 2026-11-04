@@ -25,24 +25,27 @@ export function voiceLineUrl(language: Language, id: string): string {
 }
 
 // Plays pre-recorded lines one after another, through the voice meter so the hologram reacts.
+// Only one voice at a time: starting new lines cuts off whatever is still playing.
 export class VoiceLinePlayer {
   language: Language = "en";
   private current?: HTMLAudioElement;
-  private stopped = false;
+  // Bumped by every play() and stop(), so an older sequence knows it was replaced.
+  private generation = 0;
 
   constructor(private readonly meter: VoiceMeter) {}
 
-  // Resolves when all lines have played, or when stop() was called.
+  // Resolves when all lines have played, or when they were cut off by stop() or another play().
   async play(ids: readonly string[]) {
-    this.stopped = false;
+    this.stop();
+    const generation = this.generation;
     for (const id of ids) {
-      if (this.stopped) return;
+      if (generation !== this.generation) return;
       await this.playOne(id);
     }
   }
 
   stop() {
-    this.stopped = true;
+    this.generation++;
     this.current?.pause();
     this.current?.dispatchEvent(new Event("ended"));
   }
