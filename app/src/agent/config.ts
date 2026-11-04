@@ -27,6 +27,7 @@ export const AGENTS: Record<Language, { name: string; promptHeading: string; env
 // Pulls the system prompt out of the first code block under the language's heading
 // in docs/redqueen-persona.md and fills in the game values.
 export function extractSystemPrompt(personaMarkdown: string, language: Language): string {
+  personaMarkdown = personaMarkdown.replace(/\r\n/g, "\n"); // Windows checkouts (core.autocrlf)
   const heading = AGENTS[language].promptHeading.replace(/[()]/g, "\\$&");
   const section = personaMarkdown.split(new RegExp(`^${heading}\\s*$`, "m"))[1];
   const block = section?.match(/```[^\n]*\n([\s\S]*?)\n```/);

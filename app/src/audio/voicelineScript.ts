@@ -13,6 +13,7 @@ export const SPEAKERS: Speaker[] = ["computer", "redqueen"];
 
 // Reads the lines of one speaker and language from the table rows `| \`ID\` | When | Line |`.
 export function parseVoiceLines(markdown: string, speaker: Speaker, language: Language): VoiceLine[] {
+  markdown = markdown.replace(/\r\n/g, "\n"); // Windows checkouts (core.autocrlf)
   const heading = SECTIONS[speaker][language];
   const start = markdown.indexOf(`\n${heading}\n`);
   if (start < 0) throw new Error(`Section "${heading}" not found`);

@@ -13,6 +13,13 @@ describe("extractSystemPrompt", () => {
     expect(prompt).not.toContain("{{");
   });
 
+  it("reads Windows line endings without carriage returns", () => {
+    const lf = persona.replace(/\r\n/g, "\n");
+    const prompt = extractSystemPrompt(lf.replace(/\n/g, "\r\n"), "en");
+    expect(prompt).not.toContain("\r");
+    expect(prompt).toEqual(extractSystemPrompt(lf, "en"));
+  });
+
   it("reads the German prompt", () => {
     const prompt = extractSystemPrompt(persona, "de");
     expect(prompt).toContain("Sprich Deutsch.");

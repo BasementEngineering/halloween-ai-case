@@ -27,4 +27,10 @@ describe("parseVoiceLines", () => {
     const ids = SPEAKERS.flatMap((speaker) => parseVoiceLines(script, speaker, "en").map((l) => l.id));
     for (const id of Object.values(VOICE_LINES).flat()) expect(ids).toContain(id);
   });
+
+  it("reads Windows line endings the same way", () => {
+    const lf = script.replace(/\r\n/g, "\n");
+    const crlf = lf.replace(/\n/g, "\r\n");
+    for (const speaker of SPEAKERS) expect(parseVoiceLines(crlf, speaker, "de")).toEqual(parseVoiceLines(lf, speaker, "de"));
+  });
 });
