@@ -7,22 +7,28 @@ const DEFAULT_LOGO = "/standby/emblem.svg"; // original emblem
 const LAYERS = 14; // stacked copies that give the logo its thickness
 const THICKNESS_PX = 14;
 
-const SPECIMEN: Record<Language, string[]> = {
+// Each line has a style: unit header, the virus name (large), details, and the guarding
+// system with its status at the bottom.
+type LabelLine = { text: string; kind: "unit" | "virus" | "strain" | "class" | "note" | "system" | "status" };
+
+const SPECIMEN: Record<Language, LabelLine[]> = {
   en: [
-    "CONTAINMENT UNIT 07",
-    "SPECIMEN: T-VIRUS, PROTOTYPE STRAIN",
-    "CLASS: BIOHAZARD LEVEL 4",
-    "Mutagenic viral agent. Transmission by contact with the sample.",
-    "Do not open the vial. Do not remove the sample from containment.",
-    "Security monitoring: ACTIVE",
+    { text: "CONTAINMENT UNIT 07", kind: "unit" },
+    { text: "T-VIRUS", kind: "virus" },
+    { text: "PROTOTYPE STRAIN", kind: "strain" },
+    { text: "BIOHAZARD LEVEL 4", kind: "class" },
+    { text: "Mutagenic viral agent. Transmission by contact with the sample.", kind: "note" },
+    { text: "WARDEN-3 SECURITY SYSTEM", kind: "system" },
+    { text: "STATUS: ACTIVE", kind: "status" },
   ],
   de: [
-    "SICHERHEITSBEHÄLTER 07",
-    "PROBE: T-VIRUS, PROTOTYP-STAMM",
-    "KLASSE: BIOLOGISCHE SCHUTZSTUFE 4",
-    "Mutagener viraler Erreger. Übertragung durch Kontakt mit der Probe.",
-    "Ampulle nicht öffnen. Probe nicht aus der Eindämmung entfernen.",
-    "Sicherheitsüberwachung: AKTIV",
+    { text: "SICHERHEITSBEHÄLTER 07", kind: "unit" },
+    { text: "T-VIRUS", kind: "virus" },
+    { text: "PROTOTYP-STAMM", kind: "strain" },
+    { text: "BIOLOGISCHE SCHUTZSTUFE 4", kind: "class" },
+    { text: "Mutagener viraler Erreger. Übertragung durch Kontakt mit der Probe.", kind: "note" },
+    { text: "SICHERHEITSSYSTEM WARDEN-3", kind: "system" },
+    { text: "STATUS: AKTIV", kind: "status" },
   ],
 };
 
@@ -44,11 +50,11 @@ export async function buildEmblem(container: HTMLElement) {
 
 export function showSpecimen(container: HTMLElement, language: Language) {
   container.replaceChildren(
-    ...SPECIMEN[language].map((text, index) => {
+    ...SPECIMEN[language].map(({ text, kind }, index) => {
       const line = document.createElement("div");
       line.textContent = text;
+      line.className = kind;
       line.style.animationDelay = `${0.4 + index * 0.35}s`;
-      if (index < 3) line.className = "heading";
       return line;
     }),
   );

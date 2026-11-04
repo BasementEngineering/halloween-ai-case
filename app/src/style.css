@@ -107,9 +107,61 @@ body {
   animation: fade-in 0.6s forwards;
 }
 
-#specimen .heading {
+#specimen .unit,
+#specimen .class {
   color: var(--red);
   letter-spacing: 0.12em;
+}
+
+/* The virus name is the eye-catcher of the label. */
+#specimen .virus {
+  margin: 0.15em 0 0;
+  color: var(--red);
+  font-size: 3.2em;
+  font-weight: bold;
+  line-height: 1.05;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(255, 42, 42, 0.55);
+}
+
+#specimen .strain {
+  margin-bottom: 0.6em;
+  color: var(--red);
+  letter-spacing: 0.3em;
+}
+
+#specimen .note {
+  margin-top: 0.4em;
+}
+
+/* The guarding system and its status, set off from the label by a thin rule. */
+#specimen .system {
+  margin-top: 1em;
+  padding-top: 0.7em;
+  border-top: 1px solid var(--red-dim);
+  letter-spacing: 0.12em;
+}
+
+#specimen .status {
+  letter-spacing: 0.12em;
+  color: #5cff7a;
+}
+
+#specimen .status::before {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.5em;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  vertical-align: 0.05em;
+  animation: status-pulse 2s ease-in-out 3s infinite;
+}
+
+@keyframes status-pulse {
+  50% { opacity: 0.25; }
 }
 
 @keyframes fade-in {
