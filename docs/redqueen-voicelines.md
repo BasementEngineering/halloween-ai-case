@@ -4,7 +4,9 @@ Pre-recorded lines for the two voices of the case:
 - **Case computer:** the case's own system, which raises the alarm when the vial is removed. A synthetic system voice (a Mistral preset voice per language).
 - **Red Queen:** the security AI that takes over. Her character is described in [redqueen-persona.md](redqueen-persona.md): cold, clinical, polite, precise, with dry dark humour.
 
-`npm run voicelines` (in `app/`) generates the audio from the tables below. It writes them to `app/public/voicelines/<language>/<ID>.mp3`. Only new or changed lines are regenerated. Each speaker needs the same IDs in both languages.
+`npm run voicelines` (in `app/`) generates the audio from the tables below. It writes them to `app/public/voicelines/<language>/<ID>.mp3`. Only new or changed lines are regenerated. Each speaker needs the same IDs in both languages. On the phone, the setup screen generates the same lines from this file (see [phone-setup.md](phone-setup.md#voice-lines)).
+
+Only the case computer's lines (preset voices) are in the repo. The Red Queen's lines are made with your own voice and stay git-ignored.
 
 Mistral's moderation checks every line before speaking it. Phrases that sound like prompt injection, such as "ignore the previous …", get blocked as "jailbreaking", so avoid them. The script lists blocked lines at the end.
 

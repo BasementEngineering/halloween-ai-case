@@ -43,9 +43,17 @@ For an APK installed without the repo. It opens by itself when the app has no co
 1. Paste a Mistral API key (from console.mistral.ai). A saved key stays if the field is left empty.
 2. **Load voices** and pick her voice: your own cloned voices are listed first, then Mistral's presets.
 3. Enter the clearance code you print for the players. It needs at least one digit (see the code rules in [redqueen-persona.md](redqueen-persona.md)).
-4. **Save and set up agents** creates the agents `red-queen` and `red-queen-de` in that Mistral account, or updates them if they exist, with the persona and tools bundled in the app. Then it writes `files/config.json` and restarts the app.
+4. **Save and set up agents** creates the agents `red-queen` and `red-queen-de` in that Mistral account, or updates them if they exist, with the persona and tools bundled in the app. It writes `files/config.json`, generates the voice lines (below) and restarts the app.
 
-The pre-recorded lines in the APK keep the voice they were generated with, so with a different live voice she sounds different in the scripted lines.
+### Voice lines
+
+The APK contains no Red Queen recordings. The setup screen generates her pre-recorded lines (17 per language) with the chosen voice and the same Mistral account, and stores them in the app's private files (`files/voicelines/`, about 2 MB, roughly a minute and a half). The case computer WARDEN-3 uses Mistral preset voices; its lines are bundled in the APK and generated alongside as well.
+
+- **Generate voice lines** makes only what is missing or changed (another voice, or a line edited in [redqueen-voicelines.md](redqueen-voicelines.md)).
+- **Regenerate all** makes every line again, e.g. for a better take.
+- A line rejected by Mistral's moderation is listed; the others are kept.
+
+If her lines are missing at startup, the setup screen opens. A build from the repo with lines from `npm run voicelines` in `app/public/voicelines/` plays those instead; they're git-ignored, so they never end up in the repo.
 
 ## Using it
 

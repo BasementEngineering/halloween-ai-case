@@ -1,6 +1,7 @@
 import { MistralCore } from "@mistralai/mistralai/core.js";
 import persona from "../../../docs/redqueen-persona.md?raw";
 import { listVoices, syncAgents } from "../agent/sync.js";
+import { generateVoiceLines } from "../audio/deviceVoiceLines.js";
 import { looksLikeCode } from "../game/code.js";
 import { readSavedConfig, saveDeviceConfig } from "./backend.js";
 import type { DeviceConfig } from "./deviceConfig.js";
@@ -30,9 +31,9 @@ export class SetupPanel {
         <button data-action="close">Close</button>
       </header>
       <p class="setup-intro">
-        The Red Queen runs on a Mistral voice agent in your own Mistral account. Get an API key at
-        console.mistral.ai, choose her voice and the clearance code printed for your players.
-        Saving creates the agents "red-queen" and "red-queen-de" in that account (or updates them).
+        The Red Queen runs on a Mistral voice agent in your own Mistral account. Saving creates the
+        agents "red-queen" and "red-queen-de" there (or updates them) and generates her voice lines
+        with the chosen voice.
       </p>
       <label>Mistral API key
         <input name="key" type="password" autocomplete="off" spellcheck="false">
@@ -49,6 +50,8 @@ export class SetupPanel {
       </label>
       <div class="setup-row">
         <button data-action="save" class="primary">Save and set up agents</button>
+        <button data-action="lines">Generate voice lines</button>
+        <button data-action="lines-all">Regenerate all</button>
       </div>
       <ol class="setup-log"></ol>
     `;
@@ -65,6 +68,8 @@ export class SetupPanel {
       if (button.dataset.action === "close") this.closeListener?.();
       if (button.dataset.action === "voices") this.run(() => this.loadVoices());
       if (button.dataset.action === "save") this.run(() => this.save());
+      if (button.dataset.action === "lines") this.run(() => this.generateLines(false));
+      if (button.dataset.action === "lines-all") this.run(() => this.generateLines(true));
     });
   }
 
@@ -131,12 +136,32 @@ export class SetupPanel {
       clearanceCode,
       voiceId,
     });
+    this.saved = { ...this.saved, voiceId };
+    if (!(await this.generateLines(false))) return;
     this.addLog("Saved. Restarting the app…", "good");
     window.setTimeout(() => location.reload(), 1500);
   }
 
+  // Generates the missing or changed voice lines (all with `force`). Returns false if some failed.
+  private async generateLines(force: boolean): Promise<boolean> {
+    const voiceId = this.voice.value || this.saved.voiceId;
+    if (!voiceId) throw new Error("Load the voices and pick one first.");
+    const progress = this.addLog("Voice lines: checking…");
+    const { generated, failed } = await generateVoiceLines(this.client(), voiceId, {
+      force,
+      onProgress: (done, total, file) => {
+        progress.textContent = total ? `Voice lines: ${done}/${total}${file ? ` (${file})` : ""}` : "Voice lines: all up to date";
+      },
+    });
+    if (generated) progress.textContent = `Voice lines: ${generated} generated`;
+    progress.className = failed.length ? "warn" : "good";
+    for (const failure of failed) this.addLog(failure, "bad");
+    if (failed.length) this.addLog(`${failed.length} line(s) failed. Try "Generate voice lines" again.`, "warn");
+    return failed.length === 0;
+  }
+
   // Runs one action with the buttons locked, and shows errors in the log.
-  private async run(action: () => Promise<void>) {
+  private async run(action: () => Promise<unknown>) {
     for (const button of this.buttons) button.disabled = true;
     try {
       await action();
@@ -147,12 +172,13 @@ export class SetupPanel {
     }
   }
 
-  private addLog(text: string, tone: "good" | "warn" | "bad" | "" = "") {
+  private addLog(text: string, tone: "good" | "warn" | "bad" | "" = ""): HTMLLIElement {
     const item = document.createElement("li");
     item.className = tone;
     item.textContent = text;
     this.log.append(item);
     item.scrollIntoView({ block: "nearest" });
+    return item;
   }
 }
 

@@ -12,6 +12,10 @@
 /*.webp
 # 2024 GLaDOS voice lines: only on the SD card of the old case, never published
 /Content/GladosVoicelines/
+# Red Queen voice lines: made with your own (cloned) voice, so they stay local.
+# The phone generates them in the setup screen; npm run voicelines makes them for the laptop.
+/app/public/voicelines/*/RQ_*.mp3
+/app/public/voicelines/manifest.json
 # Your own standby logo (may be a trademark), shown instead of the original emblem
 /app/public/standby/logo.png
 

@@ -5,7 +5,7 @@ import { initSession } from "@mistralai/mistralai/extra/voice-agents/browser";
 import type { Language } from "./agent/config.js";
 import { createRedQueenTools } from "./agent/tools.js";
 import { playAlert, stopAlert } from "./audio/alert.js";
-import { VOICE_LINES, VoiceLinePlayer, WARNINGS } from "./audio/voicelines.js";
+import { BUNDLED_VOICELINES, VOICE_LINES, VoiceLinePlayer, WARNINGS, voiceLineUrl } from "./audio/voicelines.js";
 import { RedQueenGame, type GameState } from "./game/game.js";
 import { GAME_RULES } from "./game/rules.js";
 import { runBootSequence } from "./render/boot.js";
@@ -14,7 +14,7 @@ import { CaseLink } from "./hardware/caseLink.js";
 import { HardwareTestPanel } from "./hardware/testPanel.js";
 import { looksLikeCode } from "./game/code.js";
 import { Leaderboard, formatSeconds, type LeaderboardEntry } from "./game/leaderboard.js";
-import { createBackend } from "./platform/backend.js";
+import { createBackend, readSavedConfig } from "./platform/backend.js";
 import { SetupRequiredError } from "./platform/deviceConfig.js";
 import type { SetupPanel } from "./platform/setupPanel.js";
 import { HologramRenderer } from "./render/hologram.js";
@@ -136,6 +136,7 @@ if (native) {
   });
 }
 if (native) startOnPhone();
+if (native) prepareVoiceLines();
 
 requestAnimationFrame(function updateHologram() {
   hologram.setVoiceLevel(voiceMeter.read());
@@ -197,6 +198,24 @@ function openHardwareTest() {
   ui.hardwareTest.disabled = true;
   logEvent("hardware test: open");
   hardwareTest.open();
+}
+
+// On the phone the voice lines come from the player's own Mistral account (setup screen).
+// The APK ships only the case computer's lines, so without hers the setup screen opens.
+async function prepareVoiceLines() {
+  const { generatedVoiceLineBase, missingRedQueenLines } = await import("./audio/deviceVoiceLines.js");
+  voiceLines.sources = [await generatedVoiceLineBase(), BUNDLED_VOICELINES];
+  try {
+    await backend;
+  } catch {
+    return; // no config: the setup screen is already open
+  }
+  const { voiceId } = await readSavedConfig();
+  const missing = voiceId ? await missingRedQueenLines(voiceId) : 1;
+  if (missing === 0) return;
+  // A build from the repo may bundle her lines (npm run voicelines); then they're enough.
+  const bundled = await fetch(voiceLineUrl("en", VOICE_LINES.intro[0])).then((r) => r.ok, () => false);
+  if (!bundled) openSetup(`Her voice lines are missing (${voiceId ? missing : "no voice chosen"}): generate them here.`);
 }
 
 // Setup screen (phone only): Mistral key, voice and clearance code. Loaded on demand,
