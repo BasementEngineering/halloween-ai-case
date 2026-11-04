@@ -57,7 +57,7 @@ Mistral's moderation checks every line before speaking it. Phrases that sound li
 | `RQ_17_10S` | 10 s left | Ten. … Nine. … Eight. … Seven. … Six. … Five. … Four. … Three. … Two. … One. |
 | `RQ_18_WIN` | Antidote released (offline) | Very well. Antidote released. … Consider yourself fortunate. I rarely change my mind. |
 | `RQ_19_FAIL` | Time is up | Time is up. Infection complete. Containment protocol engaged. … I did warn you. |
-| `RQ_20_RESET` | Vial back, case closed | Sample secured. Resetting containment. … Next time, leave the vial where it belongs. |
+| `RQ_20_RESET` | Vial back, case closed | Sample secured. Resetting containment. Next time, leave the vial where it belongs. |
 
 ## Red Queen – Deutsch
 
@@ -79,4 +79,4 @@ Mistral's moderation checks every line before speaking it. Phrases that sound li
 | `RQ_17_10S` | 10 s left | Zehn. … Neun. … Acht. … Sieben. … Sechs. … Fünf. … Vier. … Drei. … Zwei. … Eins. |
 | `RQ_18_WIN` | Antidote released (offline) | Nun gut. Gegengift freigegeben. … Betrachten Sie sich als glücklich. Ich ändere selten meine Meinung. |
 | `RQ_19_FAIL` | Time is up | Die Zeit ist um. Infektion abgeschlossen. Eindämmungsprotokoll aktiviert. … Ich habe Sie gewarnt. |
-| `RQ_20_RESET` | Vial back, case closed | Probe gesichert. Eindämmung wird zurückgesetzt. … Lassen Sie die Ampulle beim nächsten Mal, wo sie hingehört. |
+| `RQ_20_RESET` | Vial back, case closed | Probe gesichert. Eindämmung wird zurückgesetzt. Lassen Sie die Ampulle beim nächsten Mal, wo sie hingehört. |
