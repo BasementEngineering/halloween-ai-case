@@ -91,7 +91,7 @@ GPIO10 ── 74AHCT125 (5 V) ── 330 Ω ──────── LED strip D
 
 - Supply the strip from the power bank's 5 V, not from the board.
 - The 74AHCT125 runs on 5 V; tie its OE pin to GND. 3.3 V data often works without it, but not reliably.
-- Full white on the 23 case LEDs draws about 1.4 A. The 5 drawer LEDs only glow green (about 0.1 A). The red effects need much less.
+- Full white on the 23 case LEDs draws about 1.4 A. The 5 drawer LEDs breathe white only while the drawer is open (about 0.3 A at full white). The red effects need much less.
 - The drawer moves, so its LED cable needs some slack (or a flexible ribbon) to follow it.
 
 ### DRV8833 (drawer motor)

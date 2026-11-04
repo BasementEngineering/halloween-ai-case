@@ -27,7 +27,7 @@
 #include "lights.h"
 
 #define DEVICE_NAME "RedQueenCase"
-#define FIRMWARE_VERSION "2.3"
+#define FIRMWARE_VERSION "2.4"
 
 // Nordic UART Service
 #define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -688,8 +688,8 @@ void loop()
   }
   // The switch is closed while the lid is shut. Without a lid switch the lid counts as open.
   lights.setLidOpen(!USE_LID_SWITCH || !lidSwitch.active);
-  // The drawer LEDs light the antidote whenever the drawer isn't shut.
-  lights.setDrawerOpen(drawerState != DRAWER_CLOSED);
+  // The drawer LEDs light the antidote while the drawer is opening, open or closing.
+  lights.setDrawerOpen(drawerState == DRAWER_OPENING || drawerState == DRAWER_OPEN || drawerState == DRAWER_CLOSING);
 
   updateVial();
   updateDrawer();

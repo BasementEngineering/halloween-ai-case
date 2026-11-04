@@ -77,8 +77,10 @@ const FINAL_LINE_TIMEOUT_MS = 15_000;
 // Hidden gesture: holding the standby screen this long switches the language.
 const LANGUAGE_HOLD_MS = 2000;
 const LANGUAGE_KEY = "redqueen.language";
-// Holding the case dot this long opens the hardware test (the way in on the phone).
-const HARDWARE_TEST_HOLD_MS = 1500;
+// Hidden gesture for the hardware test: this many quick taps in the empty top-left corner.
+const HARDWARE_TEST_TAPS = 5;
+const HARDWARE_TEST_TAP_WINDOW_MS = 2000;
+const HARDWARE_TEST_CORNER_PX = 80;
 const native = Capacitor.isNativePlatform();
 
 const game = new RedQueenGame();
@@ -139,26 +141,27 @@ for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
 
 // The ESP32 in the case: the dot shows whether heartbeats arrive, the vial sensor drives the game.
 ui.caseDot.addEventListener("click", () => {
-  if (caseDotHeld) {
-    caseDotHeld = false;
-    return;
-  }
   if (caseLink.status === "disconnected") caseLink.pick();
 });
 
-// Hardware test: from the console button, by holding the case dot, or with ?test.
-let caseDotHold: number | undefined;
-let caseDotHeld = false;
-ui.caseDot.addEventListener("pointerdown", () => {
-  caseDotHeld = false;
-  caseDotHold = window.setTimeout(() => {
-    caseDotHeld = true;
+// Hardware test: from the console button, with ?test, or (on the phone) by tapping the
+// top-left corner of the screen 5 times within 2 s. Nothing on screen marks the spot.
+let cornerTaps: number[] = [];
+ui.screenBox.addEventListener("pointerdown", (e) => {
+  const box = ui.screenBox.getBoundingClientRect();
+  const inCorner = e.clientX - box.left < HARDWARE_TEST_CORNER_PX && e.clientY - box.top < HARDWARE_TEST_CORNER_PX;
+  if (!inCorner) {
+    cornerTaps = [];
+    return;
+  }
+  const now = performance.now();
+  cornerTaps = [...cornerTaps.filter((t) => now - t < HARDWARE_TEST_TAP_WINDOW_MS), now];
+  if (cornerTaps.length >= HARDWARE_TEST_TAPS) {
+    cornerTaps = [];
+    window.clearTimeout(languageHold);
     openHardwareTest();
-  }, HARDWARE_TEST_HOLD_MS);
+  }
 });
-for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
-  ui.caseDot.addEventListener(type, () => window.clearTimeout(caseDotHold));
-}
 ui.hardwareTest.addEventListener("click", openHardwareTest);
 hardwareTest.onClose(closeHardwareTest);
 if (new URLSearchParams(location.search).has("test")) openHardwareTest();

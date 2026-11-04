@@ -249,8 +249,8 @@ class Lights
         setLogo((t % 1000) < 150 ? red : dimColor(red, 0.15));
     }
 
-    // Drawer LEDs: off while the drawer is shut (or with LED:OFF), otherwise the antidote
-    // glows green. They fade in over the first second, then breathe gently.
+    // Drawer LEDs: off unless the drawer is opening, open or closing (and off with LED:OFF). Then the antidote
+    // glows white: a fade-in over the first second, then a slow breath.
     void renderDrawer(unsigned long t)
     {
         if (effect == LIGHTS_CUSTOM)
@@ -265,7 +265,7 @@ class Lights
         }
         // pulse() is at full brightness at t = 1000, so the breathing joins the fade-in smoothly.
         float level = t < 1000 ? (float)t / 1000 : pulse(t, 2000, 0.5);
-        setRange(DRAWER_FIRST, DRAWER_LENGTH, dimColor(strip.Color(0, 255, 80), level));
+        setRange(DRAWER_FIRST, DRAWER_LENGTH, dimColor(strip.Color(255, 255, 255), level));
     }
 
     // Brightness between `low` and 1.0, one full breath every `period` ms.

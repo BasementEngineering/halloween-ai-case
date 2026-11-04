@@ -155,11 +155,14 @@ export class CaseLink {
     this.setStatus("connecting");
     try {
       await BleClient.connect(deviceId, (id) => this.onDisconnected(id), { timeout: 10_000 });
+      this.vialInPlace = undefined;
       await BleClient.startNotifications(deviceId, NUS_SERVICE, NUS_TX, (value) => this.receive(value));
       this.reconnectAttempt = 0;
-      this.vialInPlace = undefined;
       this.setStatus("connected");
       this.log(`connected to ${deviceId}`);
+      // The case sends its status as soon as the link is up, usually before the notifications
+      // are on, so ask again. Without it the vial has no baseline and the first removal is lost.
+      this.send("STATUS").catch((error) => this.log(`status request failed: ${error}`));
       this.startPing();
     } catch (error) {
       this.log(`connect failed: ${error}`);

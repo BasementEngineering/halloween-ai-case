@@ -37,7 +37,7 @@ At the top of `redqueen-case.ino`:
 
 ### Lights
 
-All 28 LEDs are one chain on GPIO10: 0–14 inside the case, 15–22 logo, 23–27 drawer. The effects drive the inside and logo LEDs; the drawer LEDs ignore the effect and glow green while the drawer isn't closed (off with `LED:OFF`). Lengths are at the top of `lights.h`.
+All 28 LEDs are one chain on GPIO10: 0–14 inside the case, 15–22 logo, 23–27 drawer. The effects drive the inside and logo LEDs; the drawer LEDs ignore the effect and breathe white while the drawer is opening, open or closing, off otherwise (and with `LED:OFF`). Lengths are at the top of `lights.h`.
 
 ## Protocol
 

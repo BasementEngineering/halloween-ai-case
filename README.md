@@ -33,7 +33,7 @@ Work in progress, target 2026-11-15. Plans and to-dos: [docs/roadmap.md](docs/ro
 
 Run `npm test` for the game-rule tests.
 
-**Hardware test:** the **Hardware test** button in the console (on the phone: hold the case dot for 1.5 s, or open the app with `?test`) shows all sensors of the case and drives the drawer, the mist and the lights directly. It only opens in standby; while it's open, the vial doesn't start the game. Closing it hands the case back to the game.
+**Hardware test:** the **Hardware test** button in the console (on the phone: tap the empty top-left corner of the screen 5 times within 2 s, or open the app with `?test`) shows all sensors of the case and drives the drawer, the mist and the lights directly. It only opens in standby; while it's open, the vial doesn't start the game. Closing it hands the case back to the game.
 
 ## Repository
 
