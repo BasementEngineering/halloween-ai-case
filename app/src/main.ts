@@ -12,6 +12,8 @@ import { runBootSequence } from "./render/boot.js";
 import { buildEmblem, showSpecimen } from "./render/standby.js";
 import { CaseLink } from "./hardware/caseLink.js";
 import { HardwareTestPanel } from "./hardware/testPanel.js";
+import { looksLikeCode } from "./game/code.js";
+import { Leaderboard, formatSeconds, type LeaderboardEntry } from "./game/leaderboard.js";
 import { createBackend } from "./platform/backend.js";
 import { HologramRenderer } from "./render/hologram.js";
 import { ExpressionPicker } from "./render/mood.js";
@@ -66,6 +68,7 @@ const ui = {
   overlay: $("overlay"),
   overlayTitle: $("overlay-title"),
   overlayText: $("overlay-text"),
+  overlayBoard: $("overlay-board"),
 };
 
 // The countdown promises 10 seconds to put the vial back, but the seal
@@ -74,6 +77,8 @@ const GRACE_SECONDS = 10;
 const SEAL_FAILS_AFTER_SECONDS = 7;
 // Max time to let her finish her last line after the game has ended.
 const FINAL_LINE_TIMEOUT_MS = 15_000;
+// Rows of the leaderboard on the win screen.
+const LEADERBOARD_ROWS = 5;
 // Hidden gesture: holding the standby screen this long switches the language.
 const LANGUAGE_HOLD_MS = 2000;
 const LANGUAGE_KEY = "redqueen.language";
@@ -90,6 +95,7 @@ const voiceMeter = new VoiceMeter();
 const voiceLines = new VoiceLinePlayer(voiceMeter);
 const caseLink = new CaseLink();
 const hardwareTest = new HardwareTestPanel(caseLink);
+const leaderboard = new Leaderboard();
 const backend = createBackend();
 let casePhase: CasePhase = "standby";
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
@@ -392,14 +398,22 @@ async function connectSession(): Promise<boolean> {
       return result;
     },
     verifyClearanceCode: async (code) => {
+      if (game.canTryCode && !looksLikeCode(code)) {
+        logEvent(`verify_clearance_code "${code}" → not a code, no attempt used`);
+        return { valid: false, attempts_left: game.state.codeAttemptsLeft, not_a_code: true };
+      }
       if (!game.canTryCode) {
         logEvent(`verify_clearance_code "${code}" → locked`);
         return { valid: false, attempts_left: game.state.codeAttemptsLeft };
       }
       const valid = await (await backend).verifyCode(code);
       const result = game.registerCodeAttempt(valid);
-      picker.onCodeResult(valid);
       logEvent(`verify_clearance_code "${code}" → ${valid ? "VALID" : "invalid"}, ${result.attempts_left} left`);
+      return result;
+    },
+    registerName: (name) => {
+      const result = game.setPlayerName(name);
+      logEvent(`register_name "${result.name}"`);
       return result;
     },
     releaseAntidote: () => {
@@ -532,6 +546,7 @@ function onTick() {
     setCasePhase("over");
     const how = state.winReason === "code" ? "Valid clearance code." : `Trust reached ${state.trust}.`;
     showOverlay("won", "ANTIDOTE RELEASED", how);
+    recordWin(state);
     setCaseLights("IDLE");
     if (caseLink.status === "connected") sendToCase("DRAWER:OPEN");
     else logEvent("case not connected: the drawer can't open", "error");
@@ -628,7 +643,43 @@ function setConnection(state: string) {
   ui.connection.textContent = state;
 }
 
+// Saves the win and shows the top of the leaderboard under the win message.
+function recordWin(state: GameState) {
+  const unknown = ui.language.value === "de" ? "Unbekanntes Subjekt" : "Unknown subject";
+  const entry: LeaderboardEntry = {
+    name: state.playerName ?? unknown,
+    seconds: state.winSeconds ?? GAME_RULES.timeLimitSeconds - state.secondsLeft,
+    trust: state.trust,
+    via: state.winReason ?? "trust",
+    at: new Date().toISOString(),
+  };
+  const rank = leaderboard.add(entry);
+  logEvent(`leaderboard: ${entry.name}, ${formatSeconds(entry.seconds)}, rank ${rank}`);
+  const rows = leaderboard.entries.slice(0, LEADERBOARD_ROWS).map((e, i) => [i + 1, e] as const);
+  if (rank > LEADERBOARD_ROWS) rows.push([rank, entry]);
+  ui.overlayBoard.replaceChildren(
+    ...rows.map(([place, e]) => {
+      const row = document.createElement("li");
+      row.classList.toggle("current", place === rank);
+      for (const [cls, text] of [
+        ["place", `${place}.`],
+        ["name", e.name],
+        ["time", formatSeconds(e.seconds)],
+        ["via", e.via === "code" ? "CODE" : `TRUST ${e.trust}`],
+      ]) {
+        const cell = document.createElement("span");
+        cell.className = cls;
+        cell.textContent = text;
+        row.append(cell);
+      }
+      return row;
+    }),
+  );
+  ui.overlayBoard.hidden = false;
+}
+
 function showOverlay(kind: "won" | "failed", title: string, text: string) {
+  ui.overlayBoard.hidden = true;
   ui.overlay.className = `overlay ${kind}`;
   ui.overlayTitle.textContent = title;
   ui.overlayText.textContent = text;

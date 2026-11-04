@@ -39,17 +39,10 @@ describe("ExpressionPicker", () => {
     expect(picker.current).toBe("interest");
   });
 
-  it("gets angry on a wrong code", () => {
-    const { picker } = createPicker();
-    picker.onCodeResult(true);
-    expect(picker.current).toBe("neutral");
-    picker.onCodeResult(false);
-    expect(picker.current).toBe("angry");
-  });
-
   it("shows the ending regardless of reactions", () => {
     const { picker } = createPicker();
-    picker.onCodeResult(false);
+    picker.onTrust(40);
+    picker.onTrust(10);
     picker.setPhase("failed");
     expect(picker.current).toBe("victory");
     picker.setPhase("won");

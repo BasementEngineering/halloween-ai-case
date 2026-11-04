@@ -51,10 +51,6 @@ export class ExpressionPicker {
     else if (delta >= MOOD_RULES.interestTrustRise) this.react("interest");
   }
 
-  onCodeResult(valid: boolean) {
-    if (!valid) this.react("angry");
-  }
-
   private react(expression: Expression) {
     this.reaction = { expression, until: this.now() + MOOD_RULES.reactionHoldMs };
   }

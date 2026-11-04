@@ -500,6 +500,43 @@ button:disabled {
   color: #5cff7a;
 }
 
+#overlay-board {
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+}
+
+#overlay-board[hidden] {
+  display: none;
+}
+
+#overlay-board li {
+  display: grid;
+  grid-template-columns: 2.5em minmax(10em, 18em) 5.5em 7em;
+  gap: 0.8em;
+  padding: 0.2em 0.6em;
+  text-align: left;
+  color: #b9c9bc;
+}
+
+#overlay-board li.current {
+  color: #5cff7a;
+  background: rgba(92, 255, 122, 0.1);
+}
+
+#overlay-board .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#overlay-board .time,
+#overlay-board .place {
+  text-align: right;
+}
+
 @keyframes blink {
   50% { opacity: 0.2; }
 }

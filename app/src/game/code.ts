@@ -24,3 +24,19 @@ export function codesMatch(spoken: string, expected: string): boolean {
   const normalized = normalizeCode(spoken);
   return normalized.length > 0 && normalized === normalizeCode(expected);
 }
+
+// Clearance codes are short and contain digits (like ALPHA-77). Anything else, such as a
+// name, a project or a whole sentence the agent mistook for a code, is turned away without
+// using up an attempt.
+export const CODE_FORMAT = { maxWords: 4, maxLength: 16 } as const;
+
+export function looksLikeCode(spoken: string): boolean {
+  const words = spoken.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const normalized = normalizeCode(spoken);
+  return (
+    words.length > 0 &&
+    words.length <= CODE_FORMAT.maxWords &&
+    normalized.length <= CODE_FORMAT.maxLength &&
+    /\d/.test(normalized)
+  );
+}

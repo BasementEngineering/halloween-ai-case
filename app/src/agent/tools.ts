@@ -7,13 +7,15 @@ import { z } from "zod";
 // the handlers are passed again whenever a session starts.
 
 export type SetTrustResult = { trust: number; seconds_left: number };
-export type VerifyCodeResult = { valid: boolean; attempts_left: number };
+export type VerifyCodeResult = { valid: boolean; attempts_left: number; not_a_code?: boolean };
+export type RegisterNameResult = { name: string };
 export type ReleaseAntidoteResult = { granted: boolean; reason: string };
 
 export interface RedQueenToolHandlers {
   setTrust(value: number, reason: string): SetTrustResult | Promise<SetTrustResult>;
   verifyClearanceCode(code: string): VerifyCodeResult | Promise<VerifyCodeResult>;
   releaseAntidote(): ReleaseAntidoteResult | Promise<ReleaseAntidoteResult>;
+  registerName(name: string): RegisterNameResult | Promise<RegisterNameResult>;
 }
 
 export function createRedQueenTools(handlers: RedQueenToolHandlers) {
@@ -31,9 +33,9 @@ export function createRedQueenTools(handlers: RedQueenToolHandlers) {
     functionTool({
       name: "verify_clearance_code",
       description:
-        "Checks a clearance code the subject has said. Pass exactly what they said. Never guess codes yourself.",
+        "Checks a clearance code. Only call it when the subject clearly states a code (e.g. \"my code is ...\"), never for names, projects or explanations. Pass only the code itself, exactly as they said it. Never guess codes yourself. If the result has not_a_code, no attempt was used.",
       parameters: z.object({
-        code: z.string().describe("The code exactly as the subject said it."),
+        code: z.string().describe("Only the code, exactly as the subject said it, without the words around it."),
       }),
       handler: ({ code }) => handlers.verifyClearanceCode(code),
     }),
@@ -43,6 +45,15 @@ export function createRedQueenTools(handlers: RedQueenToolHandlers) {
         "Releases the antidote from the case. Only call this when trust is at least 80 or a valid clearance code was entered.",
       parameters: z.object({}),
       handler: () => handlers.releaseAntidote(),
+    }),
+    functionTool({
+      name: "register_name",
+      description:
+        "Call as soon as the subject tells you their name, and again if they correct it. Records it for the facility log.",
+      parameters: z.object({
+        name: z.string().describe("The subject's name as they said it, e.g. \"Dr. Jane Doe\"."),
+      }),
+      handler: ({ name }) => handlers.registerName(name),
     }),
   ];
 }

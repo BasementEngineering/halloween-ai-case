@@ -44,6 +44,7 @@ export function buildAgentConfiguration(opts: {
     setTrust: () => ({ trust: 0, seconds_left: 0 }),
     verifyClearanceCode: () => ({ valid: false, attempts_left: 0 }),
     releaseAntidote: () => ({ granted: false, reason: "not connected" }),
+    registerName: (name) => ({ name }),
   });
 
   return {

@@ -11,6 +11,9 @@ export interface GameState {
   codeAttemptsLeft: number;
   codeVerified: boolean;
   winReason?: WinReason;
+  playerName?: string;
+  // Seconds from the start of the game to the release, set once won.
+  winSeconds?: number;
 }
 
 type Rules = { -readonly [K in keyof typeof GAME_RULES]: number };
@@ -24,6 +27,8 @@ export class RedQueenGame {
   private codeAttemptsLeft: number;
   private codeVerified = false;
   private winReason?: WinReason;
+  private playerName?: string;
+  private winSeconds?: number;
   private readonly listeners = new Set<(state: GameState) => void>();
 
   constructor(
@@ -42,6 +47,8 @@ export class RedQueenGame {
       codeAttemptsLeft: this.codeAttemptsLeft,
       codeVerified: this.codeVerified,
       winReason: this.winReason,
+      playerName: this.playerName,
+      winSeconds: this.winSeconds,
     };
   }
 
@@ -57,6 +64,8 @@ export class RedQueenGame {
     this.codeAttemptsLeft = this.rules.codeAttempts;
     this.codeVerified = false;
     this.winReason = undefined;
+    this.playerName = undefined;
+    this.winSeconds = undefined;
     this.emit();
   }
 
@@ -75,6 +84,15 @@ export class RedQueenGame {
       this.emit();
     }
     return { trust: this.trust, seconds_left: this.secondsLeft() };
+  }
+
+  setPlayerName(name: string): { name: string } {
+    const trimmed = name.trim().replace(/\s+/g, " ").slice(0, 40);
+    if (this.phase === "running" && trimmed) {
+      this.playerName = trimmed;
+      this.emit();
+    }
+    return { name: this.playerName ?? "" };
   }
 
   get canTryCode(): boolean {
@@ -110,6 +128,7 @@ export class RedQueenGame {
   private win(reason: WinReason) {
     this.phase = "won";
     this.winReason = reason;
+    this.winSeconds = Math.round((this.now() - this.startedAt) / 100) / 10;
     this.emit();
   }
 
