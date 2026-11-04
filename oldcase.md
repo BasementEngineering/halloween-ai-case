@@ -1,6 +1,6 @@
 # The 2024 Case (GLaDOS edition)
 
-This describes the system as it was built for Halloween 2024. The source is in `Halloween_Case/` and the voice lines are in `Content/GladosVoicelines/`.
+This describes the system as it was built for Halloween 2024. The source is in `Halloween_Case/`. The voice lines were in `Content/GladosVoicelines/`, which is kept locally only and not in the repo.
 
 ## Overview
 

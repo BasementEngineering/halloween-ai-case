@@ -10,6 +10,8 @@
 /*.jpg
 /*.jpeg
 /*.webp
+# 2024 GLaDOS voice lines: only on the SD card of the old case, never published
+/Content/GladosVoicelines/
 # Your own standby logo (may be a trademark), shown instead of the original emblem
 /app/public/standby/logo.png
 
