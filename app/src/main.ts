@@ -15,6 +15,8 @@ import { HardwareTestPanel } from "./hardware/testPanel.js";
 import { looksLikeCode } from "./game/code.js";
 import { Leaderboard, formatSeconds, type LeaderboardEntry } from "./game/leaderboard.js";
 import { createBackend } from "./platform/backend.js";
+import { SetupRequiredError } from "./platform/deviceConfig.js";
+import type { SetupPanel } from "./platform/setupPanel.js";
 import { HologramRenderer } from "./render/hologram.js";
 import { ExpressionPicker } from "./render/mood.js";
 import { VoiceMeter } from "./render/voiceMeter.js";
@@ -122,7 +124,17 @@ document.body.classList.toggle("kiosk", native || new URLSearchParams(location.s
 ui.language.value = localStorage.getItem(LANGUAGE_KEY) ?? "en";
 buildEmblem(ui.emblem);
 setCasePhase("standby");
-backend.catch((error) => showNotice(String(error.message ?? error)));
+backend.catch((error) => {
+  showNotice(String(error.message ?? error));
+  // On the phone a missing or incomplete config opens the setup screen straight away.
+  if (native && error instanceof SetupRequiredError) openSetup(error.message);
+});
+if (native) {
+  hardwareTest.onSetup(() => {
+    closeHardwareTest();
+    openSetup();
+  });
+}
 if (native) startOnPhone();
 
 requestAnimationFrame(function updateHologram() {
@@ -187,6 +199,20 @@ function openHardwareTest() {
   hardwareTest.open();
 }
 
+// Setup screen (phone only): Mistral key, voice and clearance code. Loaded on demand,
+// since it pulls in the persona and the agent setup.
+let setupPanel: SetupPanel | undefined;
+async function openSetup(reason?: string) {
+  if (casePhase !== "standby") return;
+  if (!setupPanel) {
+    const { SetupPanel } = await import("./platform/setupPanel.js");
+    setupPanel = new SetupPanel();
+    setupPanel.onClose(() => setupPanel?.close());
+  }
+  logEvent("setup: open");
+  await setupPanel.open(reason);
+}
+
 // Hands the case back to the game: mist off, default brightness, the game's lights.
 function closeHardwareTest() {
   hardwareTest.close();
@@ -217,7 +243,7 @@ caseLink.onMessage((message) => {
 });
 caseLink.onVial((inPlace) => {
   logEvent(`case: vial ${inPlace ? "put back" : "removed"}`);
-  if (hardwareTest.isOpen) return;
+  if (hardwareTest.isOpen || setupPanel?.isOpen) return;
   if (inPlace) returnVial();
   else {
     resetWhenDone = false;

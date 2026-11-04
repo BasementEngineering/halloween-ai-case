@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDeviceConfig } from "./deviceConfig.js";
+import { parseDeviceConfig, SetupRequiredError } from "./deviceConfig.js";
 
 const complete = { mistralApiKey: "key", agents: { en: "a1", de: "a2" }, clearanceCode: "ALPHA-77" };
 
@@ -17,5 +17,10 @@ describe("parseDeviceConfig", () => {
 
   it("rejects a broken file", () => {
     expect(() => parseDeviceConfig("{")).toThrow(/unreadable/);
+  });
+
+  it("asks for the setup screen when something is missing", () => {
+    expect(() => parseDeviceConfig("{}")).toThrow(SetupRequiredError);
+    expect(() => parseDeviceConfig("{")).toThrow(SetupRequiredError);
   });
 });

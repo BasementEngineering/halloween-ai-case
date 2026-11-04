@@ -14,6 +14,7 @@ const config: DeviceConfig = {
   mistralApiKey: requireEnv("MISTRAL_API_KEY"),
   agents: Object.fromEntries(LANGUAGES.map((language) => [language, requireEnv(AGENTS[language].envVar)])) as DeviceConfig["agents"],
   clearanceCode: requireEnv("RED_QUEEN_CLEARANCE_CODE"),
+  voiceId: requireEnv("RED_QUEEN_VOICE_ID"),
 };
 
 // run-as gives a shell as the app (debug builds only); the file arrives through stdin.

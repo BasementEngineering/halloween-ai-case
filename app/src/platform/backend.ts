@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import type { Language } from "../agent/config.js";
 import { codesMatch } from "../game/code.js";
-import { DEVICE_CONFIG_FILE, parseDeviceConfig, SETUP_HINT, type DeviceConfig } from "./deviceConfig.js";
+import { DEVICE_CONFIG_FILE, parseDeviceConfig, SETUP_HINT, SetupRequiredError, type DeviceConfig } from "./deviceConfig.js";
 
 type SessionTools = Parameters<Parameters<typeof initSession>[0]["createSession"]>[0];
 
@@ -63,14 +63,37 @@ async function createDeviceBackend(): Promise<Backend> {
 }
 
 async function loadDeviceConfig(): Promise<DeviceConfig> {
-  let raw: string;
+  const raw = await readDeviceConfigFile();
+  if (raw === undefined) throw new SetupRequiredError(SETUP_HINT);
+  return parseDeviceConfig(raw);
+}
+
+async function readDeviceConfigFile(): Promise<string | undefined> {
   try {
     const file = await Filesystem.readFile({ path: DEVICE_CONFIG_FILE, directory: Directory.Data, encoding: Encoding.UTF8 });
-    raw = String(file.data);
+    return String(file.data);
   } catch {
-    throw new Error(SETUP_HINT);
+    return undefined;
   }
-  return parseDeviceConfig(raw);
+}
+
+// What the setup screen can prefill: whatever is saved, even if incomplete.
+export async function readSavedConfig(): Promise<Partial<DeviceConfig>> {
+  try {
+    return JSON.parse((await readDeviceConfigFile()) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+// Writes the config into the app's private files (only this app can read them).
+export async function saveDeviceConfig(config: DeviceConfig) {
+  await Filesystem.writeFile({
+    path: DEVICE_CONFIG_FILE,
+    directory: Directory.Data,
+    encoding: Encoding.UTF8,
+    data: JSON.stringify(config),
+  });
 }
 
 async function postJson<T>(url: string, body: unknown): Promise<T> {

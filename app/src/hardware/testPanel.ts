@@ -28,6 +28,7 @@ export class HardwareTestPanel {
   private uptime?: number;
   private ageTimer?: number;
   private closeListener?: () => void;
+  private setupListener?: () => void;
 
   constructor(private readonly link: CaseLink) {
     this.root = document.createElement("section");
@@ -38,6 +39,7 @@ export class HardwareTestPanel {
         <h2>Hardware test</h2>
         <button data-action="connect">Connect</button>
         <button data-action="refresh">Refresh</button>
+        <button data-action="setup" hidden>Setup</button>
         <button data-action="close">Close</button>
       </header>
       <div class="hwtest-grid">
@@ -132,6 +134,7 @@ export class HardwareTestPanel {
       if (button.dataset.action === "connect") this.link.pick();
       if (button.dataset.action === "refresh") this.send("STATUS");
       if (button.dataset.action === "close") this.closeListener?.();
+      if (button.dataset.action === "setup") this.setupListener?.();
     });
     this.brightness.addEventListener("input", () => {
       this.brightnessValue.textContent = this.brightness.value;
@@ -156,6 +159,12 @@ export class HardwareTestPanel {
 
   onClose(listener: () => void) {
     this.closeListener = listener;
+  }
+
+  // Shows the Setup button (only on the phone, where the setup screen exists).
+  onSetup(listener: () => void) {
+    this.setupListener = listener;
+    this.root.querySelector<HTMLButtonElement>("[data-action=setup]")!.hidden = false;
   }
 
   open() {

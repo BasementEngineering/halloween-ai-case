@@ -26,17 +26,26 @@ npm run phone          # builds the app, installs it on the phone and starts it
 npm run phone:config   # copies the key, agent IDs and clearance code from .env to the phone
 ```
 
-`npm run phone:config` is only needed once, and again when a value in `.env` changes. It needs the app installed first.
+`npm run phone:config` is only needed once, and again when a value in `.env` changes. It needs the app installed first. Without a laptop, use the setup screen instead (below).
 
 Requirements on the laptop: Android Studio (for the Android SDK and its bundled JDK). The scripts find both in their default locations, or set `ANDROID_HOME` and `JAVA_HOME`. The first build downloads Gradle and a Java 21 toolchain and takes a few minutes.
 
 ## Where the secrets live
 
-- **Not in the APK** and not in the repo. `npm run phone:config` writes them over USB straight into the app's private storage (`files/config.json`). Other apps can't read it there.
+- **Not in the APK** and not in the repo. The setup screen, or `npm run phone:config` over USB, writes them straight into the app's private storage (`files/config.json`). Other apps can't read it there.
 - Android backup is turned off for the app, so the file doesn't end up in a cloud backup.
 - Anyone with the unlocked phone and USB debugging could still read it out. That's acceptable for a prop that stays with you. If the phone or the APK is ever handed out, switch to a small server that holds the key (option B in the roadmap) and revoke the key.
 
-Without the config, the screen shows "not set up: run npm run phone:config".
+## Setup screen (no laptop needed)
+
+For an APK installed without the repo. It opens by itself when the app has no config, and otherwise from the hardware test (tap the top-left corner 5 times, then **Setup**):
+
+1. Paste a Mistral API key (from console.mistral.ai). A saved key stays if the field is left empty.
+2. **Load voices** and pick her voice: your own cloned voices are listed first, then Mistral's presets.
+3. Enter the clearance code you print for the players. It needs at least one digit (see the code rules in [redqueen-persona.md](redqueen-persona.md)).
+4. **Save and set up agents** creates the agents `red-queen` and `red-queen-de` in that Mistral account, or updates them if they exist, with the persona and tools bundled in the app. Then it writes `files/config.json` and restarts the app.
+
+The pre-recorded lines in the APK keep the voice they were generated with, so with a different live voice she sounds different in the scripted lines.
 
 ## Using it
 
