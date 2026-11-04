@@ -11,6 +11,7 @@ import { GAME_RULES } from "./game/rules.js";
 import { runBootSequence } from "./render/boot.js";
 import { buildEmblem, showSpecimen } from "./render/standby.js";
 import { CaseLink } from "./hardware/caseLink.js";
+import { HardwareTestPanel } from "./hardware/testPanel.js";
 import { createBackend } from "./platform/backend.js";
 import { HologramRenderer } from "./render/hologram.js";
 import { ExpressionPicker } from "./render/mood.js";
@@ -26,11 +27,12 @@ import { VoiceMeter } from "./render/voiceMeter.js";
 //      └──────── vial back (reset line) ◀── over (won / failed) ◀────────────── game (3:00)
 //
 // Once the seal has broken, putting the vial back is ignored until the game is over
-// and her last line has finished. Case lights: white until the seal breaks, then
-// red/white blinking until the antidote is released.
+// and her last line has finished. Case lights: white, then a red countdown on the
+// inside LEDs in step with the on-screen countdown, red/white blinking from the seal
+// failure until the antidote is released.
 
 type CasePhase = "standby" | "alert" | "escalating" | "game" | "over";
-type CaseLights = "IDLE" | "ALERT" | "ESCALATE";
+type CaseLights = "IDLE" | "ALERT" | "ESCALATE" | `COUNTDOWN:${number}`;
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const ui = {
@@ -57,6 +59,7 @@ const ui = {
   removeVial: $<HTMLButtonElement>("remove-vial"),
   returnVial: $<HTMLButtonElement>("return-vial"),
   stop: $<HTMLButtonElement>("stop"),
+  hardwareTest: $<HTMLButtonElement>("hardware-test"),
   mic: $<HTMLInputElement>("mic"),
   transcript: $("transcript"),
   events: $("events"),
@@ -74,6 +77,8 @@ const FINAL_LINE_TIMEOUT_MS = 15_000;
 // Hidden gesture: holding the standby screen this long switches the language.
 const LANGUAGE_HOLD_MS = 2000;
 const LANGUAGE_KEY = "redqueen.language";
+// Holding the case dot this long opens the hardware test (the way in on the phone).
+const HARDWARE_TEST_HOLD_MS = 1500;
 const native = Capacitor.isNativePlatform();
 
 const game = new RedQueenGame();
@@ -82,6 +87,7 @@ const hologram = new HologramRenderer(ui.screen);
 const voiceMeter = new VoiceMeter();
 const voiceLines = new VoiceLinePlayer(voiceMeter);
 const caseLink = new CaseLink();
+const hardwareTest = new HardwareTestPanel(caseLink);
 const backend = createBackend();
 let casePhase: CasePhase = "standby";
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
@@ -133,8 +139,51 @@ for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
 
 // The ESP32 in the case: the dot shows whether heartbeats arrive, the vial sensor drives the game.
 ui.caseDot.addEventListener("click", () => {
+  if (caseDotHeld) {
+    caseDotHeld = false;
+    return;
+  }
   if (caseLink.status === "disconnected") caseLink.pick();
 });
+
+// Hardware test: from the console button, by holding the case dot, or with ?test.
+let caseDotHold: number | undefined;
+let caseDotHeld = false;
+ui.caseDot.addEventListener("pointerdown", () => {
+  caseDotHeld = false;
+  caseDotHold = window.setTimeout(() => {
+    caseDotHeld = true;
+    openHardwareTest();
+  }, HARDWARE_TEST_HOLD_MS);
+});
+for (const type of ["pointerup", "pointercancel", "pointerleave"]) {
+  ui.caseDot.addEventListener(type, () => window.clearTimeout(caseDotHold));
+}
+ui.hardwareTest.addEventListener("click", openHardwareTest);
+hardwareTest.onClose(closeHardwareTest);
+if (new URLSearchParams(location.search).has("test")) openHardwareTest();
+
+// Only from standby, so a running game isn't disturbed. While it's open the vial
+// doesn't start the game, and the panel owns the drawer, mist and lights.
+function openHardwareTest() {
+  if (casePhase !== "standby") {
+    logEvent("hardware test: only possible in standby", "error");
+    return;
+  }
+  ui.hardwareTest.disabled = true;
+  logEvent("hardware test: open");
+  hardwareTest.open();
+}
+
+// Hands the case back to the game: mist off, default brightness, the game's lights.
+function closeHardwareTest() {
+  hardwareTest.close();
+  ui.hardwareTest.disabled = casePhase !== "standby";
+  sendToCase("MIST:OFF");
+  sendToCase("LED:BRIGHTNESS");
+  sendToCase(`LED:${caseLights}`);
+  logEvent("hardware test: closed");
+}
 caseLink.onStatus((status) => {
   ui.caseStatus.textContent = `case: ${status}`;
   renderCaseDot();
@@ -148,14 +197,15 @@ caseLink.onMessage((message) => {
     ui.caseDot.classList.remove("beat");
     void ui.caseDot.offsetWidth;
     ui.caseDot.classList.add("beat");
-  } else if (message.type === "unknown" && message.line.startsWith("ERR:")) {
-    logEvent(`case: ${message.line}`, "error");
-  } else if (message.type === "unknown" && message.line.startsWith("DRAWER:")) {
-    logEvent(`case: ${message.line}`, message.line === "DRAWER:STUCK" ? "error" : "");
+  } else if (message.type === "error") {
+    logEvent(`case: ERR:${message.text}`, "error");
+  } else if (message.type === "drawer") {
+    logEvent(`case: DRAWER:${message.state}`, message.state === "STUCK" ? "error" : "");
   }
 });
 caseLink.onVial((inPlace) => {
   logEvent(`case: vial ${inPlace ? "put back" : "removed"}`);
+  if (hardwareTest.isOpen) return;
   if (inPlace) returnVial();
   else {
     resetWhenDone = false;
@@ -175,6 +225,7 @@ function renderCaseDot() {
 // Keyboard stand-ins for the vial sensor until the ESP32 is connected: V = remove, B = put back.
 document.addEventListener("keydown", (e) => {
   if (e.repeat || e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+  if (hardwareTest.isOpen) return;
   if (e.key.toLowerCase() === "v" && casePhase === "standby") removeVial();
   if (e.key.toLowerCase() === "b") returnVial();
 });
@@ -214,6 +265,7 @@ function setCasePhase(phase: CasePhase) {
   ui.removeVial.disabled = phase !== "standby";
   ui.returnVial.disabled = phase !== "alert" && phase !== "over";
   ui.stop.disabled = phase === "standby" || phase === "over";
+  ui.hardwareTest.disabled = phase !== "standby" || hardwareTest.isOpen;
   ui.language.disabled = phase !== "standby";
   // Replay the label's fade-in whenever the standby screen comes back.
   if (phase === "standby") showSpecimen(ui.specimen, ui.language.value as Language);
@@ -232,6 +284,8 @@ async function removeVial() {
   if (casePhase !== "alert") return;
 
   const started = performance.now();
+  // The inside LEDs fill red over the same 10 s as the on-screen countdown.
+  setCaseLights(`COUNTDOWN:${GRACE_SECONDS}`);
   const update = () => {
     const elapsed = (performance.now() - started) / 1000;
     if (casePhase !== "alert") {

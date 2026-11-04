@@ -33,6 +33,8 @@ Work in progress, target 2026-11-15. Plans and to-dos: [docs/roadmap.md](docs/ro
 
 Run `npm test` for the game-rule tests.
 
+**Hardware test:** the **Hardware test** button in the console (on the phone: hold the case dot for 1.5 s, or open the app with `?test`) shows all sensors of the case and drives the drawer, the mist and the lights directly. It only opens in standby; while it's open, the vial doesn't start the game. Closing it hands the case back to the game.
+
 ## Repository
 
 | Path | Contents |
@@ -47,6 +49,7 @@ Run `npm test` for the game-rule tests.
 | [`docs/redqueen-voicelines.md`](docs/redqueen-voicelines.md) | 20 pre-recorded Red Queen lines |
 | [`docs/phone-setup.md`](docs/phone-setup.md) | Android app for the phone in the case (Capacitor): setup, build, secrets |
 | [`docs/hardware.md`](docs/hardware.md) | 2026 wiring: ESP32-C3 pin map, sensor, drawer, mist maker, power |
+| [`docs/bom.md`](docs/bom.md) | Bill of materials: electronics and hardware/material, with shop links |
 | [`docs/mistral-setup.md`](docs/mistral-setup.md) | Red Queen voice agent on Mistral (Voxtral) |
 | [`docs/elevenlabs-setup.md`](docs/elevenlabs-setup.md) | Alternative: ElevenLabs agent (not used) |
 

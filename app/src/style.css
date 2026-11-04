@@ -451,3 +451,176 @@ button:disabled {
 @keyframes blink {
   50% { opacity: 0.2; }
 }
+
+/* Hardware test (hardware/testPanel.ts): full screen on top of everything, also on the phone. */
+#hwtest {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 0.8rem 1rem;
+  background: var(--bg);
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+#hwtest[hidden] {
+  display: none;
+}
+
+#hwtest header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.5rem;
+}
+
+#hwtest header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+}
+
+#hwtest button {
+  padding: 0.5rem 0.9rem;
+}
+
+#hwtest button[hidden] {
+  display: none;
+}
+
+#hwtest button:active {
+  background: var(--red);
+}
+
+.hwtest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 0.8rem;
+}
+
+.hwtest-card {
+  border: 1px solid var(--red-dim);
+  padding: 0.6rem 0.8rem;
+}
+
+.hwtest-card h3 {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--red);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hwtest-state {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.8rem;
+  margin: 0;
+}
+
+.hwtest-state dt {
+  opacity: 0.7;
+}
+
+.hwtest-state dd {
+  margin: 0;
+  font-weight: bold;
+}
+
+.hwtest-state dd.good { color: #5cff7a; }
+.hwtest-state dd.warn { color: #ffb02a; }
+.hwtest-state dd.bad { color: var(--red); }
+
+.hwtest-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.hwtest-effects button {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.hwtest-hint {
+  margin: 0 0 0.6rem;
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.hwtest-slider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.hwtest-slider input {
+  flex: 1;
+  accent-color: var(--red);
+}
+
+.hwtest-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.hwtest-colors label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+}
+
+.hwtest-colors input {
+  width: 3rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--red);
+  background: none;
+}
+
+.hwtest-log-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.hwtest-log {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  height: 14rem;
+  overflow-y: auto;
+  border: 1px solid #1d0b0b;
+  font-size: 0.75rem;
+}
+
+.hwtest-log li {
+  padding: 0.15rem 0.4rem;
+  white-space: pre-wrap;
+}
+
+.hwtest-log li.sent { color: #7fb3ff; }
+.hwtest-log li.error { color: #ffb02a; }
+.hwtest-log li.info { opacity: 0.6; }
+
+.hwtest-command {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.hwtest-command input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  background: #000;
+  color: var(--text);
+  border: 1px solid var(--red-dim);
+  padding: 0.4rem;
+}

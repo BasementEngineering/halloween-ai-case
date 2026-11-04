@@ -11,6 +11,23 @@ describe("parseLine", () => {
     expect(parseLine("VIAL:1\n")).toEqual({ type: "vial", inPlace: true });
   });
 
+  it("parses the case state", () => {
+    expect(parseLine("DRAWER:OPENING")).toEqual({ type: "drawer", state: "OPENING" });
+    expect(parseLine("LID:1")).toEqual({ type: "lid", open: true });
+    expect(parseLine("MIST:OFF")).toEqual({ type: "mist", on: false });
+    expect(parseLine("SW:CLOSED:1")).toEqual({ type: "switch", name: "CLOSED", pressed: true });
+    expect(parseLine("LED:COUNTDOWN")).toEqual({ type: "lights", effect: "COUNTDOWN" });
+    expect(parseLine("BRIGHTNESS:160")).toEqual({ type: "brightness", value: 160 });
+    expect(parseLine("BTN:OVERRIDE")).toEqual({ type: "button", name: "OVERRIDE" });
+    expect(parseLine("FW:2.1")).toEqual({ type: "firmware", version: "2.1" });
+    expect(parseLine("ERR:UNKNOWN:FOO")).toEqual({ type: "error", text: "UNKNOWN:FOO" });
+  });
+
+  it("keeps malformed state lines as unknown", () => {
+    expect(parseLine("DRAWER:SIDEWAYS")).toEqual({ type: "unknown", line: "DRAWER:SIDEWAYS" });
+    expect(parseLine("SW:LID:1")).toEqual({ type: "unknown", line: "SW:LID:1" });
+  });
+
   it("parses pong and keeps unknown lines", () => {
     expect(parseLine("PONG")).toEqual({ type: "pong" });
     expect(parseLine("HELLO")).toEqual({ type: "unknown", line: "HELLO" });

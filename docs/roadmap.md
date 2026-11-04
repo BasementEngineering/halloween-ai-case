@@ -57,7 +57,7 @@ Setup and build: [phone-setup.md](phone-setup.md).
 - [x] **App side:** `CaseLink` with auto-reconnect (1, 2, 4, 8, 10 s) and a pulsing dot (green = heartbeats arriving, red = none for 5 s). The vial events drive the case flow.
 - [x] **Tested on the laptop (2026-10-30):** connect via the dot, heartbeat pulse, BOOT button triggers the case flow, auto-reconnect after an ESP32 reset.
 - [ ] Reconnect after a page reload: needs `navigator.bluetooth.getDevices()`, which this Chrome only offers behind `chrome://flags/#enable-web-bluetooth-new-permissions-backend`. Check on the phone; otherwise one tap on the dot after a reload.
-- [ ] Sensors: VL53L1X time-of-flight sensor for the vial, hidden override button, "drawer closed" end switch. Lid switch: no lid sequence anymore, but the LEDs turn on white when the lid opens (in the firmware).
+- [ ] Sensors: vial contacts (closed while the vial is in, GPIO6) instead of the VL53L1X, hidden override button, "drawer closed" end switch. Lid switch: no lid sequence anymore, but the LEDs turn on white when the lid opens (in the firmware).
 - [ ] Drawer: DC motor with rubber-band slip drive on a DRV8833, plus the mist maker (MOSFET) when it opens.
 
 ## Phase 4: hardware build

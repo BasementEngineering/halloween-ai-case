@@ -6,16 +6,18 @@ The old Android phone is screen, speaker and mic, and talks to the controller ov
 
 ## Parts
 
+Full shopping list with links: [bom.md](bom.md).
+
 | Part | Job |
 |---|---|
 | ESP32-C3 Super Mini | Case controller, BLE link to the phone |
-| VL53L1X time-of-flight sensor | Detects whether the vial is in its holder |
-| 23 × WS2812 (NeoPixel) | 8 in the emblem (LEDs 0–7), 15 in the side strips (LEDs 8–22), reused from 2024 |
+| Vial contacts | Two contacts in the vial holder, closed while the vial is inserted |
+| 28 × WS2812 (NeoPixel), one chain | 15 inside the case (LEDs 0–14), 8 in the logo (LEDs 15–22), 5 in the drawer (LEDs 23–27) |
 | 74AHCT125 (or similar) | Level shifter for the NeoPixel data line (3.3 V → 5 V) |
 | DRV8833 motor driver | Drives the drawer motor |
 | Small DC gear motor with rubber-band drive | Opens and closes the antidote drawer; the band slips at both ends |
 | Micro switch | End switch "drawer closed" |
-| Micro switch (optional) | End switch "drawer open"; not needed with the slip drive and a timed open |
+| Micro switch | End switch "drawer open" (optional in the firmware: without it the drawer opens for a fixed time) |
 | Logic-level N-MOSFET (AO3400, IRLZ34N, …) | Switches the ultrasonic mist maker |
 | Ultrasonic mist maker (5 V, with driver board) | Mist when the drawer opens |
 | Push button, hidden | Override: opens the drawer without the phone |
@@ -48,8 +50,8 @@ The board has 16 header pins: 3 for power (5V, GND, 3V3) and 13 GPIOs. Top view 
 | 3 | MOSFET gate (mist maker) | Output, HIGH = mist on | 10 kΩ pull-down to GND keeps the mist off during boot |
 | 4 | DRV8833 AIN1 | PWM output | |
 | 5 | DRV8833 AIN2 | PWM output | |
-| 6 | VL53L1X SDA | I²C | |
-| 7 | VL53L1X SCL | I²C | |
+| 6 | Vial contact → GND, closed while the vial is in | `INPUT_PULLUP`, LOW = vial in place | The other contact goes to GND |
+| 7 | – | | Spare |
 | 8 | Onboard LED | Output, LOW = on | Strapping pin; status LED (blinks while advertising, on when connected) |
 | 9 | Override button → GND, parallel to the onboard BOOT button | `INPUT_PULLUP`, LOW = pressed | Strapping pin; holding it at power-up only enters flash mode |
 | 10 | NeoPixel data (through the level shifter) | Output | |
@@ -57,25 +59,28 @@ The board has 16 header pins: 3 for power (5V, GND, 3V3) and 13 GPIOs. Top view 
 | 21 | – | | Spare. Sends the boot log at power-up, so only use it for something that doesn't mind |
 | 18, 19 | USB | | Not on the header, only wired to the USB-C port |
 
-This uses 10 pins including the onboard LED and the lid switch, 11 with the optional "drawer open" switch, and leaves GPIO2 and GPIO21 spare.
+This uses 10 pins including the onboard LED and the lid switch, 11 with the optional "drawer open" switch, and leaves GPIO2, GPIO7 and GPIO21 spare.
 
 ## Connections per part
 
-### VL53L1X (vial sensor)
+### Vial contacts
 
-| VL53L1X | Connects to |
-|---|---|
-| VIN | 3.3 V |
-| GND | GND |
-| SDA | GPIO6 |
-| SCL | GPIO7 |
-| XSHUT, GPIO1 | Not connected |
+```
+contact A ── GPIO6
+contact B ── GND
+```
 
-- Most breakout boards already have I²C pull-ups. I²C address 0x29.
-- The sensor only measures reliably from about **4 cm**. Mount it at least 5 cm from the vial and look for a change in distance (vial there vs. gone), not an exact value.
-- Clear glass gives poor readings. Point it at a non-transparent part of the vial (cap or base), or put a small opaque marker there.
+- The vial bridges the two contacts while it's inserted, which pulls GPIO6 to GND. The internal pull-up holds it HIGH (= vial removed) otherwise; no resistor needed.
+- Polarity doesn't matter, it's just a switch.
+- The firmware waits 200 ms (`VIAL_DEBOUNCE_MS`) before a change counts, so a wobbly vial doesn't flicker between in and out.
 
 ### NeoPixels
+
+One chain on one data pin. The order along the chain sets the LED numbers:
+
+```
+GPIO10 → 15 inside the case (0–14) → 8 logo (15–22) → 5 drawer (23–27)
+```
 
 ```
 5 V ──────────────────────────┬──────────── LED strip 5 V
@@ -86,7 +91,8 @@ GPIO10 ── 74AHCT125 (5 V) ── 330 Ω ──────── LED strip D
 
 - Supply the strip from the power bank's 5 V, not from the board.
 - The 74AHCT125 runs on 5 V; tie its OE pin to GND. 3.3 V data often works without it, but not reliably.
-- Full white on all 23 LEDs draws about 1.4 A. The red effects need much less.
+- Full white on the 23 case LEDs draws about 1.4 A. The 5 drawer LEDs only glow green (about 0.1 A). The red effects need much less.
+- The drawer moves, so its LED cable needs some slack (or a flexible ribbon) to follow it.
 
 ### DRV8833 (drawer motor)
 
@@ -135,6 +141,7 @@ All switches go from the GPIO to GND, using the internal pull-up. No extra resis
 | Drawer closed | 0 |
 | Drawer open (optional) | 1 |
 | Override button | 9 |
+| Vial (contacts) | 6 |
 | Lid | 20 |
 
 ## Power
@@ -149,6 +156,6 @@ Power bank (USB-C, 5 V / 3 A)
 All GNDs connected together.
 ```
 
-- Feed the loads directly from the 5 V line, not through the C3's USB port or its 3.3 V regulator. Only the VL53L1X, the DRV8833 nSLEEP pin and the switches use the board's 3.3 V.
+- Feed the loads directly from the 5 V line, not through the C3's USB port or its 3.3 V regulator. Only the DRV8833 nSLEEP pin uses the board's 3.3 V.
 - Don't power the C3 through its 5 V pin and USB at the same time while flashing, unless the board has a diode there. The safe way is to unplug the 5 V line while flashing.
 - Rough peak current: mist maker 0.5 A, motor 0.5 A, LEDs up to 1.4 A, C3 0.1 A, plus the phone charging. That's within 3 A, as long as the LEDs don't run full white while the drawer moves.
