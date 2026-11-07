@@ -21,6 +21,22 @@ describe("RedQueenGame", () => {
     });
   });
 
+  it("resets to a fresh, idle game after a finished one", () => {
+    const { game, advance } = createGame();
+    game.start();
+    game.setTrust(50, "test");
+    advance(GAME_RULES.timeLimitSeconds);
+    game.tick();
+    game.reset();
+    expect(game.state).toMatchObject({
+      phase: "idle",
+      trust: GAME_RULES.trustStart,
+      secondsLeft: GAME_RULES.timeLimitSeconds,
+      codeAttemptsLeft: GAME_RULES.codeAttempts,
+      codeVerified: false,
+    });
+  });
+
   it("fails when the time runs out", () => {
     const { game, advance } = createGame();
     game.start();

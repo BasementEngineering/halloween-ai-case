@@ -479,6 +479,7 @@ async function startRedQueen() {
   ui.transcript.replaceChildren();
   ui.events.replaceChildren();
   picker.reset(GAME_RULES.trustStart);
+  game.reset(); // timer and trust meter show a fresh game during the boot, not the last one
   warningsPlayed.clear();
 
   const connected = connectSession();

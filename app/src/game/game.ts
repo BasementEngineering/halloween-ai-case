@@ -59,6 +59,14 @@ export class RedQueenGame {
     return () => this.listeners.delete(listener);
   }
 
+  // Back to a fresh game that hasn't started: full time, starting trust. The screen shows
+  // these values while she boots, instead of the previous game's.
+  reset() {
+    this.start();
+    this.phase = "idle";
+    this.emit();
+  }
+
   start() {
     this.phase = "running";
     this.trust = this.rules.trustStart;
