@@ -26,6 +26,7 @@ export class HologramRenderer {
   private powerStart = 0;
   private powerDuration = 1;
   private voice = 0;
+  private blank = false; // the canvas already shows black and nothing changes
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     const gl = canvas.getContext("webgl2");
@@ -92,6 +93,18 @@ export class HologramRenderer {
     const p = Math.min(1, (now - this.powerStart) / this.powerDuration);
     this.power = this.powerFrom + (this.powerTo - this.powerFrom) * p;
     this.glitch *= 0.93;
+
+    // Faded out (standby): the shader would only draw black, so draw it once and then
+    // leave the GPU alone until she fades in again. Saves power on the phone.
+    if (this.power === 0 && this.powerTo === 0) {
+      if (!this.blank) {
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        this.blank = true;
+      }
+      return;
+    }
+    this.blank = false;
 
     if (!this.current || !this.previous) {
       gl.clearColor(0, 0, 0, 1);

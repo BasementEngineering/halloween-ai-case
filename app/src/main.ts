@@ -1,4 +1,5 @@
 import { KeepAwake } from "@capacitor-community/keep-awake";
+import { ScreenBrightness } from "@capacitor-community/screen-brightness";
 import { Capacitor } from "@capacitor/core";
 import type { BrowserVoiceEventMap, VoiceAgentSession } from "@mistralai/mistralai/extra/voice-agents";
 import { initSession } from "@mistralai/mistralai/extra/voice-agents/browser";
@@ -76,6 +77,8 @@ const ui = {
 // The countdown promises 10 seconds to put the vial back, but the seal
 // "unexpectedly" fails after 7 and the Red Queen takes over anyway.
 const GRACE_SECONDS = 10;
+// The lid must stay closed this long before it ends a game (same as LID_RESET_MS in the firmware).
+const LID_RESET_MS = 1000;
 const SEAL_FAILS_AFTER_SECONDS = 7;
 // Max time to let her finish her last line after the game has ended.
 const FINAL_LINE_TIMEOUT_MS = 15_000;
@@ -100,6 +103,13 @@ const hardwareTest = new HardwareTestPanel(caseLink);
 const leaderboard = new Leaderboard();
 const backend = createBackend();
 let casePhase: CasePhase = "standby";
+let setupPanel: SetupPanel | undefined;
+// Lid state from the case (LID:0/1), and whether the screen sleeps because it's closed.
+let lidOpen = true;
+let asleep = false;
+let lidResetTimer: number | undefined;
+// Last vial state from the case: opening the lid with the vial out starts the run.
+let vialOut = false;
 let session: VoiceAgentSession<BrowserVoiceEventMap> | null = null;
 let ticker: number | undefined;
 let graceTimer: number | undefined;
@@ -198,6 +208,7 @@ function openHardwareTest() {
   ui.hardwareTest.disabled = true;
   logEvent("hardware test: open");
   hardwareTest.open();
+  updateSleep();
 }
 
 // On the phone the voice lines come from the player's own Mistral account (setup screen).
@@ -220,16 +231,19 @@ async function prepareVoiceLines() {
 
 // Setup screen (phone only): Mistral key, voice and clearance code. Loaded on demand,
 // since it pulls in the persona and the agent setup.
-let setupPanel: SetupPanel | undefined;
 async function openSetup(reason?: string) {
   if (casePhase !== "standby") return;
   if (!setupPanel) {
     const { SetupPanel } = await import("./platform/setupPanel.js");
     setupPanel = new SetupPanel();
-    setupPanel.onClose(() => setupPanel?.close());
+    setupPanel.onClose(() => {
+      setupPanel?.close();
+      updateSleep();
+    });
   }
   logEvent("setup: open");
   await setupPanel.open(reason);
+  updateSleep();
 }
 
 // Hands the case back to the game: mist off, default brightness, the game's lights.
@@ -240,11 +254,15 @@ function closeHardwareTest() {
   sendToCase("LED:BRIGHTNESS");
   sendToCase(`LED:${caseLights}`);
   logEvent("hardware test: closed");
+  updateSleep();
 }
 caseLink.onStatus((status) => {
   ui.caseStatus.textContent = `case: ${status}`;
   renderCaseDot();
   if (status === "connected") sendToCase(`LED:${caseLights}`);
+  // Without a link the lid is unknown: wake up, so the case never sits dark by mistake.
+  if (status !== "connected") lidOpen = true;
+  updateSleep();
 });
 caseLink.onMessage((message) => {
   if (message.type === "heartbeat") {
@@ -258,15 +276,19 @@ caseLink.onMessage((message) => {
     logEvent(`case: ERR:${message.text}`, "error");
   } else if (message.type === "drawer") {
     logEvent(`case: DRAWER:${message.state}`, message.state === "STUCK" ? "error" : "");
+  } else if (message.type === "lid") {
+    onLid(message.open);
   }
 });
 caseLink.onVial((inPlace) => {
   logEvent(`case: vial ${inPlace ? "put back" : "removed"}`);
+  vialOut = !inPlace;
   if (hardwareTest.isOpen || setupPanel?.isOpen) return;
   if (inPlace) returnVial();
   else {
     resetWhenDone = false;
-    if (casePhase === "standby") removeVial();
+    // With the lid closed nobody sees the screen: the run starts when it's opened.
+    if (casePhase === "standby" && lidOpen) removeVial();
   }
 });
 caseLink.onLog((text) => logEvent(`case: ${text}`));
@@ -299,6 +321,53 @@ async function startOnPhone() {
   }
 }
 
+// Lid closed in standby: the screen goes black and as dim as it gets. The app keeps
+// running and stays connected, so opening the lid wakes it at once. A real screen-off
+// would let Android throttle the app, and then it might miss the lid or the vial.
+// On the AMOLED screen of the phone, black pixels are switched off.
+function onLid(open: boolean) {
+  if (open === lidOpen) return;
+  lidOpen = open;
+  logEvent(`case: lid ${open ? "opened" : "closed"}`);
+  window.clearTimeout(lidResetTimer);
+  if (!open) lidResetTimer = window.setTimeout(resetFromLid, LID_RESET_MS);
+  const wasAsleep = asleep;
+  updateSleep();
+  if (!open || casePhase !== "standby") return;
+  if (vialOut && !hardwareTest.isOpen && !setupPanel?.isOpen) {
+    // Opened with the vial still out: the normal run, as if it had just been removed.
+    removeVial();
+  } else if (!wasAsleep) {
+    // Opening the case replays the label's fade-in, like switching the language.
+    showSpecimen(ui.specimen, ui.language.value as Language);
+  }
+}
+
+// The lid has stayed closed: the single safe exit. Whatever was going on ends silently,
+// the drawer closes and the mist stops (the case does that by itself too), and the
+// screen goes to sleep. Not while the hardware test or setup is open.
+function resetFromLid() {
+  if (lidOpen || hardwareTest.isOpen || setupPanel?.isOpen || casePhase === "standby") return;
+  logEvent("lid closed: reset");
+  sendToCase("DRAWER:CLOSE");
+  sendToCase("MIST:OFF");
+  resetWhenDone = false;
+  ui.overlay.hidden = true;
+  abort();
+}
+
+function updateSleep() {
+  const sleep =
+    !lidOpen && casePhase === "standby" && caseLink.status === "connected" && !hardwareTest.isOpen && !setupPanel?.isOpen;
+  if (sleep === asleep) return;
+  asleep = sleep;
+  ui.screenBox.classList.toggle("asleep", sleep);
+  logEvent(sleep ? "screen: asleep (lid closed)" : "screen: awake");
+  // -1 hands the brightness back to the phone's own setting.
+  if (native) ScreenBrightness.setBrightness({ brightness: sleep ? 0 : -1 }).catch((error) => logEvent(`brightness failed: ${error}`, "error"));
+  if (!sleep && casePhase === "standby") showSpecimen(ui.specimen, ui.language.value as Language);
+}
+
 function setLanguage(language: Language) {
   ui.language.value = language;
   localStorage.setItem(LANGUAGE_KEY, language);
@@ -326,6 +395,7 @@ function setCasePhase(phase: CasePhase) {
   ui.language.disabled = phase !== "standby";
   // Replay the label's fade-in whenever the standby screen comes back.
   if (phase === "standby") showSpecimen(ui.specimen, ui.language.value as Language);
+  updateSleep();
 }
 
 // The case computer raises the alarm; the player has a few seconds to undo it.
