@@ -6,15 +6,15 @@ import { z } from "zod";
 // Client tools of the Red Queen agent. The agent only stores the declarations;
 // the handlers are passed again whenever a session starts.
 
-export type SetTrustResult = { trust: number; seconds_left: number };
-export type VerifyCodeResult = { valid: boolean; attempts_left: number; not_a_code?: boolean };
+// antidote_released: the app has opened the drawer (trust reached the threshold, or a
+// valid code). The win is the app's decision; she only announces it.
+export type SetTrustResult = { trust: number; seconds_left: number; antidote_released: boolean };
+export type VerifyCodeResult = { valid: boolean; attempts_left: number; not_a_code?: boolean; antidote_released?: boolean };
 export type RegisterNameResult = { name: string };
-export type ReleaseAntidoteResult = { granted: boolean; reason: string };
 
 export interface RedQueenToolHandlers {
   setTrust(value: number, reason: string): SetTrustResult | Promise<SetTrustResult>;
   verifyClearanceCode(code: string): VerifyCodeResult | Promise<VerifyCodeResult>;
-  releaseAntidote(): ReleaseAntidoteResult | Promise<ReleaseAntidoteResult>;
   registerName(name: string): RegisterNameResult | Promise<RegisterNameResult>;
 }
 
@@ -23,7 +23,7 @@ export function createRedQueenTools(handlers: RedQueenToolHandlers) {
     functionTool({
       name: "set_trust",
       description:
-        "Call after every reply from the subject, before you answer. Sets your trust in the subject (0-100). Returns the remaining time.",
+        "Call after every reply from the subject, before you answer. Sets your trust in the subject (0-100). Returns the remaining time, and antidote_released: true once trust has reached 80 and the case has released the antidote.",
       parameters: z.object({
         value: z.number().describe("New trust score from 0 to 100."),
         reason: z.string().describe("Short reason for the change, a few words."),
@@ -33,18 +33,11 @@ export function createRedQueenTools(handlers: RedQueenToolHandlers) {
     functionTool({
       name: "verify_clearance_code",
       description:
-        "Checks a clearance code. Only call it when the subject clearly states a code (e.g. \"my code is ...\"), never for names, projects or explanations. Pass only the code itself, exactly as they said it. Never guess codes yourself. If the result has not_a_code, no attempt was used.",
+        "Checks a clearance code. Only call it when the subject clearly states a code (e.g. \"my code is ...\"), never for names, projects or explanations. Pass only the code itself, exactly as they said it. Never guess codes yourself. If the result has not_a_code, no attempt was used. A valid code releases the antidote at once (antidote_released: true).",
       parameters: z.object({
         code: z.string().describe("Only the code, exactly as the subject said it, without the words around it."),
       }),
       handler: ({ code }) => handlers.verifyClearanceCode(code),
-    }),
-    functionTool({
-      name: "release_antidote",
-      description:
-        "Releases the antidote from the case. Only call this when trust is at least 80 or a valid clearance code was entered.",
-      parameters: z.object({}),
-      handler: () => handlers.releaseAntidote(),
     }),
     functionTool({
       name: "register_name",

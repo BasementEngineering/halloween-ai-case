@@ -34,32 +34,36 @@ describe("RedQueenGame", () => {
     const { game, advance } = createGame();
     game.start();
     advance(30);
-    expect(game.setTrust(150, "test")).toEqual({ trust: 100, seconds_left: GAME_RULES.timeLimitSeconds - 30 });
-    expect(game.setTrust(-5, "test").trust).toBe(0);
+    expect(game.setTrust(-5, "test")).toEqual({ trust: 0, seconds_left: GAME_RULES.timeLimitSeconds - 30, antidote_released: false });
+    expect(game.setTrust(150, "test").trust).toBe(100);
   });
 
-  it("refuses the antidote below the trust threshold", () => {
+  it("keeps the antidote locked below the trust threshold", () => {
     const { game } = createGame();
     game.start();
-    game.setTrust(GAME_RULES.trustToRelease - 1, "almost");
-    expect(game.releaseAntidote().granted).toBe(false);
+    expect(game.setTrust(GAME_RULES.trustToRelease - 1, "almost").antidote_released).toBe(false);
     expect(game.state.phase).toBe("running");
   });
 
-  it("grants the antidote at the trust threshold", () => {
+  it("releases the antidote as soon as trust reaches the threshold", () => {
     const { game } = createGame();
     game.start();
-    game.setTrust(GAME_RULES.trustToRelease, "convinced");
-    expect(game.releaseAntidote().granted).toBe(true);
+    expect(game.setTrust(GAME_RULES.trustToRelease, "convinced").antidote_released).toBe(true);
     expect(game.state).toMatchObject({ phase: "won", winReason: "trust" });
   });
 
-  it("grants the antidote after a valid code, regardless of trust", () => {
+  it("keeps reporting the release on later trust calls", () => {
     const { game } = createGame();
     game.start();
-    expect(game.registerCodeAttempt(true)).toEqual({ valid: true, attempts_left: GAME_RULES.codeAttempts });
-    expect(game.releaseAntidote().granted).toBe(true);
-    expect(game.state.winReason).toBe("code");
+    game.setTrust(100, "convinced");
+    expect(game.setTrust(20, "changed her mind")).toMatchObject({ trust: 100, antidote_released: true });
+  });
+
+  it("releases the antidote after a valid code, regardless of trust", () => {
+    const { game } = createGame();
+    game.start();
+    expect(game.registerCodeAttempt(true)).toEqual({ valid: true, attempts_left: GAME_RULES.codeAttempts, antidote_released: true });
+    expect(game.state).toMatchObject({ phase: "won", winReason: "code" });
   });
 
   it("locks the code path after too many wrong attempts", () => {
@@ -67,8 +71,8 @@ describe("RedQueenGame", () => {
     game.start();
     for (let i = 0; i < GAME_RULES.codeAttempts; i++) game.registerCodeAttempt(false);
     expect(game.canTryCode).toBe(false);
-    expect(game.registerCodeAttempt(true).valid).toBe(false);
-    expect(game.releaseAntidote().granted).toBe(false);
+    expect(game.registerCodeAttempt(true)).toMatchObject({ valid: false, antidote_released: false });
+    expect(game.state.phase).toBe("running");
   });
 
   it("ignores tool calls once the game is over", () => {
@@ -76,8 +80,7 @@ describe("RedQueenGame", () => {
     game.start();
     advance(GAME_RULES.timeLimitSeconds);
     game.tick();
-    game.setTrust(100, "too late");
-    expect(game.releaseAntidote().granted).toBe(false);
+    expect(game.setTrust(100, "too late").antidote_released).toBe(false);
     expect(game.state.phase).toBe("failed");
   });
 });

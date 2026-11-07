@@ -30,7 +30,7 @@ describe("extractSystemPrompt", () => {
   it("uses the same tool names in both languages", () => {
     for (const language of ["en", "de"] as const) {
       const prompt = extractSystemPrompt(persona, language);
-      for (const tool of ["set_trust", "verify_clearance_code", "release_antidote", "register_name"]) {
+      for (const tool of ["set_trust", "verify_clearance_code", "antidote_released", "register_name"]) {
         expect(prompt).toContain(tool);
       }
     }

@@ -1,4 +1,4 @@
-import type { ReleaseAntidoteResult, SetTrustResult, VerifyCodeResult } from "../agent/tools.js";
+import type { SetTrustResult, VerifyCodeResult } from "../agent/tools.js";
 import { GAME_RULES } from "./rules.js";
 
 export type GamePhase = "idle" | "running" | "won" | "failed";
@@ -19,7 +19,9 @@ export interface GameState {
 type Rules = { -readonly [K in keyof typeof GAME_RULES]: number };
 
 // The rules of the Red Queen game. The app enforces them, not the LLM:
-// the agent's tool calls end up here and can be refused.
+// the agent's tool calls end up here, and the app decides when the game is won.
+// Reaching the trust threshold or a valid code releases the antidote at once,
+// so the win doesn't wait for another turn of the conversation.
 export class RedQueenGame {
   private phase: GamePhase = "idle";
   private trust: number;
@@ -81,9 +83,10 @@ export class RedQueenGame {
   setTrust(value: number, _reason: string): SetTrustResult {
     if (this.phase === "running") {
       this.trust = Math.round(Math.min(100, Math.max(0, value)));
-      this.emit();
+      if (this.trust >= this.rules.trustToRelease) this.win("trust");
+      else this.emit();
     }
-    return { trust: this.trust, seconds_left: this.secondsLeft() };
+    return { trust: this.trust, seconds_left: this.secondsLeft(), antidote_released: this.phase === "won" };
   }
 
   setPlayerName(name: string): { name: string } {
@@ -101,28 +104,15 @@ export class RedQueenGame {
 
   // Records the result of a code check (the check itself happens on the server).
   registerCodeAttempt(valid: boolean): VerifyCodeResult {
-    if (!this.canTryCode) return { valid: false, attempts_left: this.codeAttemptsLeft };
+    if (!this.canTryCode) return { valid: false, attempts_left: this.codeAttemptsLeft, antidote_released: this.phase === "won" };
     if (valid) {
       this.codeVerified = true;
+      this.win("code");
     } else {
       this.codeAttemptsLeft--;
+      this.emit();
     }
-    this.emit();
-    return { valid, attempts_left: this.codeAttemptsLeft };
-  }
-
-  releaseAntidote(): ReleaseAntidoteResult {
-    if (this.phase !== "running") {
-      return { granted: false, reason: `game is ${this.phase}` };
-    }
-    if (this.codeVerified) {
-      this.win("code");
-    } else if (this.trust >= this.rules.trustToRelease) {
-      this.win("trust");
-    } else {
-      return { granted: false, reason: `trust ${this.trust} is below ${this.rules.trustToRelease} and no valid code was entered` };
-    }
-    return { granted: true, reason: this.winReason === "code" ? "valid clearance code" : "trust threshold reached" };
+    return { valid, attempts_left: this.codeAttemptsLeft, antidote_released: this.phase === "won" };
   }
 
   private win(reason: WinReason) {

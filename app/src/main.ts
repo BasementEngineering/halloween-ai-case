@@ -439,7 +439,7 @@ async function connectSession(): Promise<boolean> {
     setTrust: (value, reason) => {
       const result = game.setTrust(value, reason);
       picker.onTrust(result.trust);
-      logEvent(`set_trust ${value} – ${reason}`);
+      logEvent(`set_trust ${value} – ${reason}${result.antidote_released ? " → ANTIDOTE RELEASED" : ""}`);
       return result;
     },
     verifyClearanceCode: async (code) => {
@@ -459,11 +459,6 @@ async function connectSession(): Promise<boolean> {
     registerName: (name) => {
       const result = game.setPlayerName(name);
       logEvent(`register_name "${result.name}"`);
-      return result;
-    },
-    releaseAntidote: () => {
-      const result = game.releaseAntidote();
-      logEvent(`release_antidote → ${result.granted ? "GRANTED" : "denied"} (${result.reason})`);
       return result;
     },
   });

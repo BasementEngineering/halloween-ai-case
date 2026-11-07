@@ -42,9 +42,8 @@ export function buildAgentConfiguration(opts: {
 }): AudioAgentConfigurationRequest {
   // Only the declarations are saved on the agent, so the handlers are stubs here.
   const tools = createRedQueenTools({
-    setTrust: () => ({ trust: 0, seconds_left: 0 }),
+    setTrust: () => ({ trust: 0, seconds_left: 0, antidote_released: false }),
     verifyClearanceCode: () => ({ valid: false, attempts_left: 0 }),
-    releaseAntidote: () => ({ granted: false, reason: "not connected" }),
     registerName: (name) => ({ name }),
   });
 
