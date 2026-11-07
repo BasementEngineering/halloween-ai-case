@@ -13,7 +13,11 @@
  - NeoPixels (one chain: 15 inside the case, 8 logo, 5 drawer): the app picks the effect; without the app the case runs
    standalone (seal breaks 7 s after the vial is removed -> red/white blinking
    until the override button opens the drawer)
- - Standby lights: all white while the lid is open, off while it's closed
+ - Standby lights: all white while the lid is open (fading in); while it's closed
+   the inside is off and only the logo on the outside stays lit
+ - Lid reset: closing the lid for LID_RESET_MS closes the drawer, stops the mist and
+   hands the lights back to standby (also with the app connected). Opening the lid
+   with the vial still out starts the vial countdown again from the beginning.
  - The same commands also work over the USB serial monitor (115200 baud)
 
  Built for the esp32:esp32 core 2.0.x with "USB CDC On Boot" enabled.
@@ -27,7 +31,7 @@
 #include "lights.h"
 
 #define DEVICE_NAME "RedQueenCase"
-#define FIRMWARE_VERSION "2.4"
+#define FIRMWARE_VERSION "2.7"
 
 // Nordic UART Service
 #define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -55,6 +59,9 @@
 
 // The vial contacts must stay stable this long before a change counts.
 #define VIAL_DEBOUNCE_MS 200
+
+// The lid must stay closed this long before it resets the case (a bump does nothing).
+#define LID_RESET_MS 1000
 
 // Standalone only: the countdown promises this long to put the vial back ...
 #define COUNTDOWN_MS 10000
@@ -314,13 +321,19 @@ DrawerState drawerStateFromSwitches()
 // countdown once it's removed, red/white blinking when the seal breaks after 7 s.
 // Putting the vial back always returns to standby, also after the seal broke.
 // While the app is connected it runs the game and sends the effects itself.
+bool lidClosed()
+{
+  return USE_LID_SWITCH && lidSwitch.active;
+}
+
 void updateAutoLights()
 {
   if (appControlsLights)
   {
     return;
   }
-  if (!vialKnown || vialInPlace)
+  // A closed lid ends everything: standby lights, which are off while it's closed.
+  if (!vialKnown || vialInPlace || lidClosed())
   {
     lights.setEffect(LIGHTS_IDLE);
   }
@@ -332,6 +345,25 @@ void updateAutoLights()
   {
     lights.startCountdown(COUNTDOWN_MS, vialRemovedSince);
   }
+}
+
+// The lid has been closed for LID_RESET_MS: the single safe exit. Drawer in, mist off,
+// lights back to standby. The app gets LID:0 and ends its game by itself.
+bool lidResetDone = false;
+
+void resetFromLid()
+{
+  Serial.println("Lid closed: reset");
+  if (drawerState == DRAWER_OPEN || drawerState == DRAWER_OPENING)
+  {
+    closeDrawer();
+  }
+  if (mistOn)
+  {
+    setMist(0);
+  }
+  appControlsLights = false;
+  updateAutoLights();
 }
 
 void onVialChanged()
@@ -685,6 +717,17 @@ void loop()
   if (updateSwitch(lidSwitch) && USE_LID_SWITCH)
   {
     sendLine(lidSwitch.active ? "LID:0" : "LID:1");
+    lidResetDone = false;
+    // Opened again with the vial still out: the countdown starts over, as if it was just removed.
+    if (!lidSwitch.active && vialKnown && !vialInPlace)
+    {
+      vialRemovedSince = millis();
+    }
+  }
+  if (lidClosed() && !lidResetDone && millis() - lidSwitch.changed >= LID_RESET_MS)
+  {
+    lidResetDone = true;
+    resetFromLid();
   }
   // The switch is closed while the lid is shut. Without a lid switch the lid counts as open.
   lights.setLidOpen(!USE_LID_SWITCH || !lidSwitch.active);

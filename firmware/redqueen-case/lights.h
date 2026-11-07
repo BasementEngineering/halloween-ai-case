@@ -17,6 +17,11 @@
 #define DRAWER_LENGTH 5
 #define LED_COUNT     (DRAWER_FIRST + DRAWER_LENGTH)
 
+// Standby: the white light fades in over this long when the lid is opened.
+#define LID_FADE_IN_MS 1500
+// Standby with the lid closed: the logo on the outside stays lit at this level (0-1).
+#define LOGO_CLOSED_LEVEL 1.0
+
 enum LightEffect
 {
     LIGHTS_OFF,       // everything off, the drawer too
@@ -128,7 +133,14 @@ class Lights
         return false;
     }
 
-    void setLidOpen(bool open) { lidOpen = open; }
+    void setLidOpen(bool open)
+    {
+        if (open && !lidOpen)
+        {
+            lidOpenedAt = millis();
+        }
+        lidOpen = open;
+    }
 
     // The drawer LEDs don't follow the effect: they light up while the drawer is open.
     void setDrawerOpen(bool open)
@@ -160,6 +172,7 @@ class Lights
     uint32_t customColors[3] = {0, 0, 0};  // inside, logo, drawer
     LightEffect effect = LIGHTS_OFF;
     bool lidOpen = true;
+    unsigned long lidOpenedAt = 0;  // 0 at boot: already open, no fade
     bool drawerOpen = false;
     unsigned long effectStart = 0;
     unsigned long countdownMs = 7000;
@@ -179,8 +192,21 @@ class Lights
             setCase(0);
             break;
         case LIGHTS_IDLE:
-            setCase(lidOpen ? white : 0);
+        {
+            // Fades in after the lid opens; squared, so it looks even to the eye.
+            float fade = lidOpenedAt == 0 ? 1.0 : min(1.0f, (millis() - lidOpenedAt) / (float)LID_FADE_IN_MS);
+            if (lidOpen)
+            {
+                setCase(dimColor(white, fade * fade));
+            }
+            else
+            {
+                // Closed: the inside goes dark, the logo on the outside stays on.
+                setInside(0);
+                setLogo(dimColor(white, LOGO_CLOSED_LEVEL));
+            }
             break;
+        }
         case LIGHTS_ALERT:
         case LIGHTS_ESCALATE:
         {

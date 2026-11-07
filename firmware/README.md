@@ -68,7 +68,7 @@ After connecting (and on `STATUS`), the case sends its status: firmware version,
 |---|---|
 | `PING` | Answered with `PONG` |
 | `STATUS` | Sends the status again |
-| `LED:<effect>` | `OFF`, `IDLE`, `ALERT`, `ESCALATE`, `GAME`, `WIN`, `FAIL`, `COUNTDOWN`. From then on the app controls the lights. `IDLE` follows the lid: all white while open, off while closed |
+| `LED:<effect>` | `OFF`, `IDLE`, `ALERT`, `ESCALATE`, `GAME`, `WIN`, `FAIL`, `COUNTDOWN`. From then on the app controls the lights. `IDLE` follows the lid: all white while open, only the logo lit while closed |
 | `LED:BRIGHTNESS:<n>` / `LED:BRIGHTNESS` | Brightness 0–255, or back to the default (`LED_BRIGHTNESS`) |
 | `LED:COLOR:<zone>:<RRGGBB>` | `CUSTOM` effect: a fixed colour for `INSIDE`, `LOGO`, `DRAWER` or `ALL` (hex colour). The drawer LEDs follow it too |
 | `LED:COUNTDOWN:<s>` | Countdown over `<s>` seconds instead of the default 10: the inside LEDs turn red pair by pair from both ends towards the middle, the logo ticks red once a second. It stays all red when the time is up |
@@ -83,6 +83,7 @@ After connecting (and on `STATUS`), the case sends its status: firmware version,
 ### Without the app
 
 The case also works on its own:
-- Lights: all white while the lid is open and off while it's closed (`IDLE`). When the vial is removed, a 10 s countdown runs (`COUNTDOWN`, `COUNTDOWN_MS`), but the seal breaks "unexpectedly" after 7 s (`SEAL_FAILS_AFTER_MS`) and the lights blink red/white (`ALERT`). Putting the vial back always returns to `IDLE`, also after the seal broke. With the app connected, the app runs the game and sends the effects itself.
+- Lights: all white while the lid is open, only the logo lit while it's closed (`IDLE`). When the vial is removed, a 10 s countdown runs (`COUNTDOWN`, `COUNTDOWN_MS`), but the seal breaks "unexpectedly" after 7 s (`SEAL_FAILS_AFTER_MS`) and the lights blink red/white (`ALERT`). Putting the vial back always returns to `IDLE`, also after the seal broke. With the app connected, the app runs the game and sends the effects itself.
+- The lid: the standby lights fade in over 1.5 s when it opens (`LID_FADE_IN_MS`). While it's closed, whatever effect was running, the inside is off and only the logo stays lit (`LOGO_CLOSED_LEVEL`). Closed for 1 s (`LID_RESET_MS`), it resets the case: an open drawer closes, the mist stops, the lights go back to standby. The app ends its game on the same `LID:0`. Opened again with the vial still out, the countdown starts over.
 - The override button opens the drawer, or closes it if it's already open.
 - The onboard LED blinks while the case waits for the app, and stays on when connected.
