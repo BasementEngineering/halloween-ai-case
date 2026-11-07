@@ -19,6 +19,9 @@
 # Your own standby logo (may be a trademark), shown instead of the original emblem
 /app/public/standby/logo.png
 
+# Contest writeups (Instructables, element14) with their photos and videos: local only
+/writeup/
+
 # Node
 node_modules/
 dist/
