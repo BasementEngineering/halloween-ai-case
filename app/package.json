@@ -11,7 +11,8 @@
     "agent:sync": "tsx scripts/sync-agent.ts",
     "voicelines": "tsx scripts/generate-voicelines.ts",
     "phone": "tsx scripts/phone.ts",
-    "phone:config": "tsx scripts/phone-config.ts"
+    "phone:config": "tsx scripts/phone-config.ts",
+    "release": "tsx scripts/release.ts"
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^8.3.0",

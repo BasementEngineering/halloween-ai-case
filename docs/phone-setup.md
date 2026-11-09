@@ -30,6 +30,16 @@ npm run phone:config   # copies the key, agent IDs and clearance code from .env 
 
 Requirements on the laptop: Android Studio (for the Android SDK and its bundled JDK). The scripts find both in their default locations, or set `ANDROID_HOME` and `JAVA_HOME`. The first build downloads Gradle and a Java 21 toolchain and takes a few minutes.
 
+## Release APK (to hand out)
+
+```sh
+npm run release        # from app/: builds a signed APK in release/
+```
+
+The release APK is meant for other people. They set it up with their own Mistral key in the setup screen (below), so it contains no keys and no Red Queen voice lines. The script removes the Red Queen lines, the voice line manifest and your own standby logo from the build. It then unpacks the finished APK and stops if any of those files, or any value from `.env`, are still in it. Unlike `npm run phone`, the release build can't be inspected from `chrome://inspect`. The current APK is committed in `release/` so it can be downloaded straight from GitHub on a phone.
+
+The signing key lives outside the repo in `~/.redqueen/` (`release.jks` and `release-signing.properties` with its password); `RQ_SIGNING_PROPERTIES` can point elsewhere. **Back up both files.** Without them, later versions can't be installed over this one. The debug build from `npm run phone` is signed with a different key, so uninstall it before installing the release APK (this clears the saved config and the generated voice lines). Raise `versionCode` and `versionName` in `app/android/app/build.gradle` for every new release.
+
 ## Where the secrets live
 
 - **Not in the APK** and not in the repo. The setup screen, or `npm run phone:config` over USB, writes them straight into the app's private storage (`files/config.json`). Other apps can't read it there.

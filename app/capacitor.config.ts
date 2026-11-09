@@ -9,10 +9,9 @@ const config: CapacitorConfig = {
   // Debug builds log every plugin call and result to the Android log, including the
   // config file with the API key. Never turn this back on.
   loggingBehavior: "none",
-  android: {
-    // Only for debugging the WebView from chrome://inspect on the laptop.
-    webContentsDebuggingEnabled: true,
-  },
+  // webContentsDebuggingEnabled is left unset on purpose: Capacitor then allows
+  // chrome://inspect only in debug builds (npm run phone). A release APK (npm run release)
+  // can't be inspected, so nobody can read the stored API key out of it over USB.
   plugins: {
     // MainActivity hides the system bars itself; Capacitor's own inset handling would pad
     // the page by the camera notch and leave a white strip in landscape.
