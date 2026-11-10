@@ -26,6 +26,16 @@ describe("Leaderboard", () => {
     expect(board.add(entry("High", 45, 95))).toBe(1);
   });
 
+  it("can be reset", () => {
+    const storage = memoryStorage();
+    const board = new Leaderboard(storage);
+    board.add(entry("Ada", 60));
+    board.add(entry("Bob", 30));
+    board.clear();
+    expect(new Leaderboard(storage).entries).toEqual([]);
+    expect(board.add(entry("Cy", 90))).toBe(1);
+  });
+
   it("survives broken storage", () => {
     const storage = memoryStorage();
     storage.setItem("redqueen.leaderboard", "not json");

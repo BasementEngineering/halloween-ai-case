@@ -4,7 +4,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // plus native Bluetooth, keep-awake and fullscreen. See docs/phone-setup.md.
 const config: CapacitorConfig = {
   appId: "de.redqueencase.app",
-  appName: "Red Queen",
+  appName: "Warden III",
   webDir: "dist",
   // Debug builds log every plugin call and result to the Android log, including the
   // config file with the API key. Never turn this back on.

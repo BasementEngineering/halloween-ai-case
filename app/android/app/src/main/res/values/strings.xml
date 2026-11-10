@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Red Queen</string>
-    <string name="title_activity_main">Red Queen</string>
+    <string name="app_name">Warden III</string>
+    <string name="title_activity_main">Warden III</string>
     <string name="package_name">de.redqueencase.app</string>
     <string name="custom_url_scheme">de.redqueencase.app</string>
 </resources>

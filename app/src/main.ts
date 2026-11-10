@@ -145,6 +145,10 @@ if (native) {
     openSetup();
   });
 }
+hardwareTest.onResetScores(() => {
+  leaderboard.clear();
+  logEvent("leaderboard reset");
+});
 if (native) startOnPhone();
 if (native) prepareVoiceLines();
 

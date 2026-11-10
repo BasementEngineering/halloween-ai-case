@@ -41,6 +41,11 @@ export class Leaderboard {
     this.storage.setItem(STORAGE_KEY, JSON.stringify(entries));
     return entries.indexOf(entry) + 1;
   }
+
+  // Deletes all saved wins (from the hardware test screen).
+  clear() {
+    this.storage.setItem(STORAGE_KEY, "[]");
+  }
 }
 
 // "0:42.3"

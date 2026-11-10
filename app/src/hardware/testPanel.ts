@@ -29,6 +29,8 @@ export class HardwareTestPanel {
   private ageTimer?: number;
   private closeListener?: () => void;
   private setupListener?: () => void;
+  private resetScoresListener?: () => void;
+  private resetArmed?: number;
 
   constructor(private readonly link: CaseLink) {
     this.root = document.createElement("section");
@@ -40,6 +42,7 @@ export class HardwareTestPanel {
         <button data-action="connect">Connect</button>
         <button data-action="refresh">Refresh</button>
         <button data-action="setup" hidden>Setup</button>
+        <button data-action="reset-scores" hidden>Reset high scores</button>
         <button data-action="close">Close</button>
       </header>
       <div class="hwtest-grid">
@@ -135,6 +138,7 @@ export class HardwareTestPanel {
       if (button.dataset.action === "refresh") this.send("STATUS");
       if (button.dataset.action === "close") this.closeListener?.();
       if (button.dataset.action === "setup") this.setupListener?.();
+      if (button.dataset.action === "reset-scores") this.resetScores(button);
     });
     this.brightness.addEventListener("input", () => {
       this.brightnessValue.textContent = this.brightness.value;
@@ -165,6 +169,29 @@ export class HardwareTestPanel {
   onSetup(listener: () => void) {
     this.setupListener = listener;
     this.root.querySelector<HTMLButtonElement>("[data-action=setup]")!.hidden = false;
+  }
+
+  // Shows the "Reset high scores" button; the listener deletes the saved wins.
+  onResetScores(listener: () => void) {
+    this.resetScoresListener = listener;
+    this.root.querySelector<HTMLButtonElement>("[data-action=reset-scores]")!.hidden = false;
+  }
+
+  // Needs a second tap within 3 s, so a stray tap doesn't wipe the scores.
+  private resetScores(button: HTMLButtonElement) {
+    if (this.resetArmed === undefined) {
+      button.textContent = "Tap again to reset";
+      this.resetArmed = window.setTimeout(() => {
+        this.resetArmed = undefined;
+        button.textContent = "Reset high scores";
+      }, 3000);
+      return;
+    }
+    window.clearTimeout(this.resetArmed);
+    this.resetArmed = undefined;
+    this.resetScoresListener?.();
+    button.textContent = "Reset high scores";
+    this.addLog("High scores reset", "info");
   }
 
   open() {
