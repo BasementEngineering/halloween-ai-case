@@ -45,8 +45,8 @@ Everything needed to build the Red Queen case. Wiring and pin map: [hardware.md]
 
 | # | Part | Qty | Spec / note | ≈ € | Links |
 |---|---|---|---|---|---|
-| C1 | Aluminium case with foam insert | 1 | About 260 × 150 mm. Room for the phone in the lid and the drawer in the side | 15 | [Amazon](https://www.amazon.de/s?k=Aluminium+Koffer+klein+Schaumstoff) |
-| C2 | Handcuffs | 1 | To "strap" the case to your wrist | 8 | [Amazon](https://www.amazon.de/s?k=Handschellen+Metall) |
+| C1 | Aluminium case with foam insert | 1 | About 260 × 150 × 85 mm. Room for the phone in the lid and the drawer in the side. Mine came from the used market | 15 | – |
+| C2 | Handcuffs | 1 | To "strap" the case to your wrist | 8 | [Amazon](https://www.amazon.de/dp/B08V1S292Z) |
 | C3 | Glass tube vial | 1 | Mine is a decorative tube with dried flowers, open at one end (Action) | 2 | [Amazon](https://www.amazon.de/-/en/comforder-Flowers-Flower-Decoration-Natural/dp/B09HY2ZV1J) |
 | C4 | Aquarium tubing, 6 mm ID / 8 mm OD | 0.5 m | The double helix inside the vial | 3 | [Amazon](https://www.amazon.de/s?k=Aquarienschlauch+6%2F8mm) · [AliExpress](https://de.aliexpress.com/w/wholesale-aquarium-tube-6mm-8mm.html) |
 | C5 | Glowsticks | 2 per game | Thin enough to slide into the tubing. Fresh ones for every party | 5 | [Amazon](https://www.amazon.de/s?k=Knicklichter) |
