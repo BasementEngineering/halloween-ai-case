@@ -85,7 +85,7 @@ Everything needed to build the Red Queen case. Wiring and pin map: [hardware.md]
 
 ## Tools
 
-Not part of the build cost, listed so nothing's missing on build day: soldering iron and solder, multimeter, wire stripper, side cutter, hot glue gun, drill, USB-C data cable for flashing the C3, 3D printer (optional, for H8–H12, H17, H18).
+Not part of the build cost, listed so nothing's missing on build day: soldering iron and solder, multimeter, wire stripper, side cutter, hot glue gun, drill, USB-C data cable for flashing the C3, 3D printer (optional, for H8–H10, H12 and H17; the files are in [cad/](../cad/README.md)).
 
 ## Rough total
 

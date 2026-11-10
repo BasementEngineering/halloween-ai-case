@@ -1,0 +1,10 @@
+# CAD files are binary: no line-ending conversion (ASCII STLs would otherwise change
+# with core.autocrlf), no text diffs.
+*.stl  binary
+*.step binary
+*.stp  binary
+*.f3d  binary
+*.f3z  binary
+*.3mf  binary
+*.iges binary
+*.igs  binary

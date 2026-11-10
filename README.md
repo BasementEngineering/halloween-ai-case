@@ -41,6 +41,7 @@ Run `npm test` for the game-rule tests.
 |---|---|
 | `app/` | Red Queen web app (in progress). `npm run agent:sync` creates/updates the Mistral agent |
 | [`firmware/`](firmware/README.md) | ESP32 firmware: case controller (C3) and BLE test (WROOM), protocol |
+| [`cad/`](cad/README.md) | 3D-printed parts: STLs, plus the design as STEP and IGES |
 | `Halloween_Case/` | 2024 ESP8266 firmware (to be archived) |
 | [`oldcase.md`](oldcase.md) | How the 2024 case works |
 | [`docs/redqueen-persona.md`](docs/redqueen-persona.md) | Red Queen character, game rules, system prompt, fixed lines |
