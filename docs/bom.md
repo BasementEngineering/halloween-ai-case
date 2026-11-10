@@ -33,13 +33,13 @@ Everything needed to build the Red Queen case. Wiring and pin map: [hardware.md]
 | P7 | Silicone wire, 22–26 AWG, several colours | 1 set | 22 AWG for 5 V / GND, 26 AWG for signals | 8 | [Amazon](https://www.amazon.de/s?k=Silikonkabel+22AWG+Set) |
 | P8 | Heat-shrink tubing assortment | 1 | | 5 | [Amazon](https://www.amazon.de/s?k=Schrumpfschlauch+Sortiment) |
 
-## Phone
+## Phone and AI
 
 | # | Part | Qty | Spec / note | ≈ € | Links |
 |---|---|---|---|---|---|
-| T1 | Old Android phone | 1 | Screen, speaker and mic, runs the Warden III app. Android 7 or newer; mine is a Galaxy A40 (2019) on Android 11 ([phone-setup.md](phone-setup.md)) | – | – |
-| T2 | Internet | – | Wi-Fi or a hotspot from another phone, for the voice agent | – | – |
-| T3 | Mistral AI account | – | Pay per use, a game costs a few cents | – | [console.mistral.ai](https://console.mistral.ai) |
+| A1 | Old Android phone | 1 | Screen, speaker and mic, runs the Warden III app. Android 7 or newer; mine is a Galaxy A40 (2019) on Android 11 ([phone-setup.md](phone-setup.md)) | – | – |
+| A2 | Internet | – | Wi-Fi or a hotspot from another phone, for the voice agent | – | – |
+| A3 | Mistral AI account | – | Pay per use, a game costs a few cents | – | [console.mistral.ai](https://console.mistral.ai) |
 
 ## Case and props
 
