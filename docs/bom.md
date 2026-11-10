@@ -25,9 +25,9 @@ Everything needed to build the Red Queen case. Wiring and pin map: [hardware.md]
 | # | Part | Qty | Spec / note | ≈ € | Links |
 |---|---|---|---|---|---|
 | P1 | USB power bank, 10 000 mAh, ≥ 3 A, **two USB-A outputs** | 1 | Powers everything: one output for the electronics, one for the phone. At most 22 mm thick to fit. This one is very similar to mine | 20 | [Amazon](https://amzn.eu/d/02qYJnRh) |
-| P2 | USB-A cable to cut | 2 | One from the power bank to the breadboard, one (USB-A to USB-C) from the power bank to the phone | 6 | [Amazon](https://www.amazon.de/s?k=USB-A+auf+USB-C+Kabel+kurz) |
+| P2 | USB cable to cut | 3 | One from the power bank to the breadboard, one to the phone (USB-A to USB-C), one from the charging port to the power bank's input | 8 | [Amazon](https://www.amazon.de/s?k=USB-A+auf+USB-C+Kabel+kurz) |
 | P3 | Small switch | 2 | One soldered into each of the two cables, so electronics and phone switch on separately | 3 | [Amazon](https://www.amazon.de/s?k=Kippschalter+Mini) |
-| P4 | Charging cable for the power bank | 1 | Cut to length and glued into the case wall, so everything can be charged without taking anything apart | 4 | [Amazon](https://www.amazon.de/s?k=USB-C+Kabel) |
+| P4 | Micro USB socket on a small board | 1 | Charging port, glued into the case wall and wired to the power bank's input. I took mine from another board; a micro USB breakout works too | 2 | [Amazon](https://www.amazon.de/s?k=Micro+USB+Buchse+Breakout) · [AliExpress](https://de.aliexpress.com/w/wholesale-micro-usb-breakout.html) |
 | P5 | Breadboard, 400 holes | 2 | One for the electronics, the power rail of the second one for more 5 V / 3.3 V / GND pins | 5 | [Amazon](https://www.amazon.de/s?k=Breadboard+400) |
 | P6 | Jumper wires and male pin headers | 1 set | Every external part (LEDs, switches, motor, power) gets a pin header so it just plugs in | 6 | [Amazon](https://www.amazon.de/s?k=Jumper+Kabel+Stiftleiste+Set) |
 | P7 | Silicone wire, 22–26 AWG, several colours | 1 set | 22 AWG for 5 V / GND, 26 AWG for signals | 8 | [Amazon](https://www.amazon.de/s?k=Silikonkabel+22AWG+Set) |
