@@ -14,7 +14,7 @@ Everything printed for the case: ready-to-print STLs, plus the whole Fusion 360 
 
 | File | Part |
 |---|---|
-| `VialTop_Part.stl` | Top of the vial, holds the upper ends of the two glowstick tubes |
+| `VialTop_Part.stl` | Top of the vial, holds the upper ends of the two glowstick tubes. **Print 3** |
 | `VialBottom_InnerPart.stl` | Glowstick holder glued into the bottom of the vial |
 | `VialBottom_OuterPart.stl` | Cap over the bottom end of the vial |
 | `VialHolder.stl` | Vial holder with the two contact surfaces (aluminium tape) |
